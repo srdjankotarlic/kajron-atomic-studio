@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#121416">
+  <meta name="description" content="Napravi animirani kajron za OBS. Podesi tekst, izgled i kretanje, pa preuzmi WebM, MP4 ili MOV video spreman za loop.">
+  <title>Kajron Studio — Tvoj tekst. Tvoj prenos.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23cbf77d'/%3E%3Cpath d='M11 10v20m0-10 16-10m-16 10 16 10' fill='none' stroke='%23121416' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Kajron Studio početna"><span class="brand-icon">k<span>↗</span></span><span>kajron<span class="brand-light">studio</span><sup>BETA</sup></span></a>
+    <nav aria-label="Glavna navigacija"><button class="nav-active" id="studio-nav">Studio</button><button id="guide-open">Kako u OBS <span>↗</span></button></nav>
+    <div class="top-actions"><span class="local-status"><i></i> Sve ostaje na tvom uređaju</span><button class="button subtle" id="save-project"><span>↓</span> Sačuvaj projekat</button></div>
+  </header>
+  <main>
+    <div class="page-heading"><div><div class="eyebrow"><span class="tiny-line"></span> TVOJ TEKST. TVOJ PRENOS.</div><h1>Od teksta do <span class="heading-fix">etra.</span></h1><p>Napravi kajron koji je spreman za tvoj sledeći live.</p></div><div class="ready-badge"><span class="obs-icon">◉</span><div>NAPRAVLJENO ZA<span>OBS Studio</span></div><span class="check">✓</span></div></div>
+    <div class="workspace">
+      <aside class="editor panel">
+        <div class="panel-heading"><h2><span class="section-icon">☷</span> Uredi kajron</h2><button class="icon-button" id="reset" title="Vrati početna podešavanja" aria-label="Vrati početna podešavanja">↺</button></div>
+        <div class="tabs" role="tablist" aria-label="Podešavanja"><button role="tab" id="tab-content" aria-controls="content-panel" aria-selected="true" data-tab="content">Tekst</button><button role="tab" id="tab-style" aria-controls="style-panel" aria-selected="false" data-tab="style">Izgled</button><button role="tab" id="tab-motion" aria-controls="motion-panel" aria-selected="false" data-tab="motion">Kretanje</button></div>
+        <section id="content-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-content">
+          <div class="field-head"><label for="text">TEKST KAJRONA</label><span id="char-count">0 / 1500</span></div>
+          <textarea id="text" maxlength="1500" rows="6" spellcheck="false" placeholder="Ovde upiši tekst koji će se prikazivati u kajronu…"></textarea>
+          <p class="field-help">Novi redovi se spajaju znakom <span class="accent">•</span> između vesti.</p>
+          <div class="divider"></div>
+          <div class="field-head"><label for="label-enabled">OZNAKA NA POČETKU</label><label class="switch"><input id="label-enabled" type="checkbox" checked><span></span></label></div>
+          <label class="sr-only" for="label">Tekst oznake</label><input id="label" type="text" maxlength="24" value="UŽIVO">
+          <p class="field-help">Fiksna oznaka ostaje vidljiva dok tekst prolazi.</p>
+          <div class="divider"></div>
+          <label class="field-label" for="font">FONT</label><select id="font"><option value="Arial">Arial · Čist i čitljiv</option><option value="Verdana">Verdana · Širok i jasan</option><option value="Georgia">Georgia · Klasičan</option><option value="Courier New">Courier New · Monospace</option></select>
+          <div class="field-head range-heading"><label for="font-size">VELIČINA SLOVA</label><output for="font-size" id="font-size-value">40 <span>px</span></output></div><input type="range" id="font-size" min="16" max="120" step="2" value="40">
+          <div class="inline-options"><label class="check-label"><input type="checkbox" id="bold" checked> Podebljano</label><label class="check-label"><input type="checkbox" id="uppercase"> VELIKA SLOVA</label></div>
+        </section>
+        <section id="style-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-style" hidden>
+          <div class="field-head"><label for="bar-height">VISINA KAJRONA</label><output id="bar-height-value">100 <span>px</span></output></div><input type="range" id="bar-height" min="48" max="320" step="2" value="100">
+          <div class="two-fields"><div><label for="text-color" class="field-label">BOJA TEKSTA</label><div class="color-field"><input id="text-color" type="color" value="#ffffff"><span id="text-color-value">#FFFFFF</span></div></div><div><label for="bar-color" class="field-label">BOJA TRAKE</label><div class="color-field"><input id="bar-color" type="color" value="#182020"><span id="bar-color-value">#182020</span></div></div></div>
+          <div class="two-fields"><div><label for="accent-color" class="field-label">AKCENAT</label><div class="color-field"><input id="accent-color" type="color" value="#cbf77d"><span id="accent-color-value">#CBF77D</span></div></div><div><label for="label-color" class="field-label">TEKST OZNAKE</label><div class="color-field"><input id="label-color" type="color" value="#121416"><span id="label-color-value">#121416</span></div></div></div>
+          <div class="field-head range-heading"><label for="opacity">NEPROZIRNOST TRAKE</label><output id="opacity-value">100 <span>%</span></output></div><input type="range" id="opacity" min="0" max="100" value="100">
+          <div class="field-head range-heading"><label for="radius">ZAOBLJENJE UGLOVA</label><output id="radius-value">0 <span>px</span></output></div><input type="range" id="radius" min="0" max="48" value="0">
+          <div class="inline-options"><label class="check-label"><input type="checkbox" id="accent-line" checked> Linija akcenta na vrhu trake</label></div><div class="divider"></div><label class="field-label" for="position">POZICIJA U KADRU</label><select id="position"><option value="bottom">Dole</option><option value="center">Sredina</option><option value="top">Gore</option></select>
+          <div class="field-head range-heading"><label for="margin">ODMAK OD IVICE KADRA</label><output id="margin-value">48 <span>px</span></output></div><input type="range" id="margin" min="0" max="200" step="2" value="48">
+        </section>
+        <section id="motion-panel" class="tab-panel" role="tabpanel" aria-labelledby="tab-motion" hidden>
+          <label class="field-label" for="motion">ANIMACIJA</label><select id="motion"><option value="left">← Tekst ulevo</option><option value="right">→ Tekst udesno</option><option value="static">Statičan kajron</option></select>
+          <div class="field-head range-heading"><label for="speed">BRZINA KRETANJA</label><output id="speed-value">120 <span>px/s</span></output></div><input id="speed" type="range" min="30" max="350" step="5" value="120"><div class="range-labels"><span>Sporo i čitljivo</span><span>Brzo</span></div>
+          <div class="field-head range-heading"><label for="gap">RAZMAK IZMEĐU PONAVLJANJA</label><output id="gap-value">120 <span>px</span></output></div><input id="gap" type="range" min="40" max="500" step="10" value="120">
+          <div class="divider"></div><div class="loop-note"><span>∞</span><h3>Beskonačno, bez prekida.</h3><p>Video sadrži ceo ciklus teksta. Dužinu automatski usklađujemo sa brzinom da prelaz u sledeći loop bude gladak.</p></div>
+          <label class="field-label" for="static-duration">TRAJANJE STATIČNOG KAJRONA</label><select id="static-duration"><option value="5">5 sekundi</option><option value="10">10 sekundi</option><option value="15">15 sekundi</option><option value="30">30 sekundi</option></select>
+        </section>
+        <div class="editor-footer"><span><i></i> Automatski sačuvano u pregledaču</span><button id="import-project" title="Učitaj projekat">Učitaj ↗</button><input id="project-file" type="file" accept=".json,application/json" hidden></div>
+      </aside>
+      <div class="main-column">
+        <section class="preview-panel panel">
+          <div class="preview-heading"><h2><i class="live-dot"></i> Pregled uživo <span class="muted preview-size" id="preview-size">1920 × 1080</span></h2><div class="segmented" aria-label="Pozadina pregleda"><button id="bg-transparent" class="active" aria-pressed="true" title="Prozirna pozadina">▦ <span>Prozirno</span></button><button id="bg-scene" aria-pressed="false" title="Primer scene">▣ <span>Scena</span></button></div></div>
+          <div class="stage-wrap"><div class="stage" id="stage"><div class="scene-art"><div class="scene-orbit orbit-one"></div><div class="scene-orbit orbit-two"></div><div class="scene-content"><span class="scene-live">● LIVE SESSION</span><h3>Prostor za<br>tvoju priču.</h3><p>TVOJ KANAL / TVOJ SADRŽAJ</p></div><span class="scene-number">01 / ON AIR</span></div><div class="safe-guide"><span>SIGURNA ZONA</span></div><canvas id="preview" width="1920" height="1080" aria-label="Pregled kajrona"></canvas><span class="stage-corner top-left"></span><span class="stage-corner bottom-right"></span></div></div>
+          <div class="playback"><div class="playback-controls"><button class="play-button" id="play" aria-label="Pauziraj pregled" title="Pauziraj">Ⅱ</button><button class="icon-button restart" id="restart" aria-label="Pokreni pregled od početka" title="Od početka">↺</button><span class="timecode" id="timecode">00:00 <span>/ 00:00</span></span></div><div class="loop-status"><span>∞</span> Loop bez prekida</div><button class="icon-button" id="fullscreen" aria-label="Pregled preko celog ekrana" title="Ceo ekran">⛶</button></div>
+          <div class="timeline"><div id="timeline-progress"></div></div>
+        </section>
+        <section class="presets-section"><div class="section-header"><h2>Počni od stila <span>ili napravi svoj.</span></h2><span>3 SPREMNA IZGLEDA</span></div><div class="presets"><button class="preset selected" data-preset="studio"><span class="preset-preview preset-studio"><b>UŽIVO</b><span>Tvoj tekst u pokretu</span><i>•</i></span><span class="preset-name">Studio <span>Čist. Moderan. Tvoj.</span><i>✓</i></span></button><button class="preset" data-preset="news"><span class="preset-preview preset-news"><b>VESTI</b><span>Najnovije informacije</span><i>•</i></span><span class="preset-name">Newsroom <span>Klasičan TV kajron.</span><i>✓</i></span></button><button class="preset" data-preset="minimal"><span class="preset-preview preset-minimal"><span>Manje je više.</span><i>•</i></span><span class="preset-name">Minimal <span>Samo važne reči.</span><i>✓</i></span></button></div></section>
+        <section class="export-panel panel" id="export-panel"><div class="export-heading"><div><h2><span class="section-icon">↗</span> Spreman za emitovanje.</h2><p>Podesi izlaz. Preuzmi video. Ubaci u OBS.</p></div><span class="export-chip">LOOP READY</span></div>
+          <div class="export-grid"><div><label class="field-label" for="format">FORMAT VIDEA</label><select id="format"><option value="webm">WebM · VP8 + Alpha</option><option value="mov">MOV · ProRes 4444 + Alpha</option><option value="mp4">MP4 · H.264</option></select></div><div><label class="field-label" for="resolution">REZOLUCIJA KADRA</label><select id="resolution"><option value="1920x1080">1920 × 1080 · Full HD</option><option value="1280x720">1280 × 720 · HD</option><option value="2560x1440">2560 × 1440 · QHD</option><option value="3840x2160">3840 × 2160 · 4K</option><option value="custom">Prilagođena…</option></select></div><div><label class="field-label" for="fps">FREJMOVA U SEKUNDI</label><select id="fps"><option value="25">25 FPS</option><option value="30" selected>30 FPS</option><option value="50">50 FPS</option><option value="60">60 FPS</option></select></div><div><label class="field-label" for="scope">VELIČINA IZVOZA</label><select id="scope"><option value="strip">Samo traka kajrona</option><option value="frame">Ceo kadar</option></select></div></div>
+          <div id="custom-size" class="two-fields" hidden><div><label class="field-label" for="custom-width">ŠIRINA KADRA (PX)</label><input type="number" id="custom-width" min="320" max="3840" step="2" value="1920"></div><div><label class="field-label" for="custom-height">VISINA KADRA (PX)</label><input type="number" id="custom-height" min="320" max="2160" step="2" value="1080"></div></div>
+          <div class="export-options"><label class="check-label"><input type="checkbox" id="transparent" checked> Prozirna pozadina <span class="alpha-badge">ALPHA</span></label><span class="export-summary" id="export-summary">1920 × 100 · 30 FPS</span></div>
+          <p class="format-note" id="format-note">WebM čuva prozirnost i zauzima malo prostora. Preporučeno za OBS.</p>
+          <div class="export-bottom"><div class="duration-stat"><span>∞</span><div><b id="duration-label">Jedan savršen loop</b><p id="duration-info">Trajanje se računa iz teksta i brzine.</p></div></div><button class="button primary" id="export"><span>↓</span> Izvezi video <span>↗</span></button></div>
+          <div class="export-progress" id="export-progress" hidden><div class="progress-top"><span id="export-status" role="status">Priprema izvoza…</span><button id="cancel-export">Otkaži</button></div><progress id="encode-progress" max="100" value="0"></progress><p id="export-detail">Obrada je lokalna. Drži ovu karticu otvorenom dok se video ne preuzme.</p></div>
+          <div class="export-result" id="export-result" hidden><span>✓ Video je spreman.</span><a id="download-again">Preuzmi ponovo ↓</a></div>
+        </section>
+        <div class="obs-tip"><span class="tip-icon">◉</span><p><b>Sledeći korak: OBS.</b> Dodaj <strong>Media Source</strong>, izaberi video i uključi <strong>Loop</strong>. Postavi izvor iznad svojih kamera i scena.</p><button id="guide-bottom" aria-label="Otvori uputstvo za OBS">↗</button></div>
+      </div>
+    </div>
+    <footer><span class="footer-brand">kajronstudio<span> / </span> MALI DETALJ. VELIKI UTISAK.</span><span>Bez naloga. Bez vodenog žiga. Samo tvoj kajron.</span></footer>
+  </main>
+  <dialog id="guide"><div class="dialog-heading"><span class="eyebrow">OD GENERATORA DO PRENOSA</span><button class="icon-button" id="guide-close" aria-label="Zatvori uputstvo">×</button></div><h2>Tvoj kajron u OBS-u.</h2><ol class="guide-steps"><li><b>Izvezi svoj video</b><p>Za prozirnost izaberi WebM ili MOV i uključi „Prozirna pozadina”. „Samo traka” daje manji fajl koji možeš slobodno da postaviš u scenu.</p></li><li><b>Dodaj Media Source</b><p>U OBS-u, u panelu Sources klikni <strong>+ → Media Source</strong>. Uključi <strong>Local File</strong> i izaberi preuzeti video.</p></li><li><b>Uključi Loop</b><p>Označi <strong>Loop</strong> i <strong>Restart playback when source becomes active</strong>. Video se neprekidno ponavlja.</p></li><li><b>Postavi kajron preko svojih izvora</b><p>Prevuci ga iznad kamera i drugih izvora u listi Sources. Pomeri traku na dno scene. Za isti kajron u više scena koristi <strong>Add Existing</strong>.</p></li></ol><div class="guide-note">MP4 nema alpha kanal: njegova pozadina je puna. Za proziran kajron koristi WebM ili MOV.</div><button class="button primary" id="guide-done">Sve jasno. Nazad u studio ↗</button></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

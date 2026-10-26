@@ -1,0 +1,9 @@
+{
+  "name": "kajron-atomic-studio",
+  "productName": "Kajron Atomic Studio",
+  "version": "1.5.0",
+  "description": "Offline OBS ticker and lower third video generator \u00b7 English / Srpski",
+  "main": "main.cjs",
+  "private": false,
+  "license": "MIT"
+}

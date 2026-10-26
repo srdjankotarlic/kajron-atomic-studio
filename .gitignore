@@ -1,0 +1,11 @@
+outputs/
+qa/
+__pycache__/
+*.pyc
+*.zip
+*.tar.gz
+*.app/
+*.log
+.DS_Store
+.env
+.env.*
