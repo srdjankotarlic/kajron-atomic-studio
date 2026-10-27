@@ -175,8 +175,10 @@ function buildCommand(s, g) {
   const x = s.motion === 'static' ? '0' : s.motion === 'right' ? `mod(${g.period}-mod(n*${g.period}/${g.frames}\\,${g.period})\\,${g.period})` : `mod(n*${g.period}/${g.frames}\\,${g.period})`;
   const inputs = ['base.png', 'track.png', 'foreground.png', 'mask.png'].flatMap(name => ['-loop', '1', '-framerate', String(s.fps), '-i', name]);
   let filters = `[1:v]format=rgba,crop=${g.contentWidth}:${g.barHeight}:${x}:0:exact=1[text];[0:v]format=rgba[base];[base][text]overlay=${g.labelWidth}:${y}:format=auto:shortest=1[bar];[bar][2:v]overlay=0:0:format=auto:shortest=1[combined];[combined]split=2[color][alpha];[alpha]alphaextract[originalalpha];[3:v]alphaextract[mask];[originalalpha][mask]blend=all_mode=multiply[finalalpha];[color][finalalpha]alphamerge[rounded]`;
-  if (!s.transparent) filters += `;color=c=black:s=${g.width}x${h}:r=${s.fps},format=rgba[black];[black][rounded]overlay=0:0:format=auto:shortest=1,format=yuv420p[out]`;
-  else filters += ';[rounded]format=yuva420p[out]';
+  // Keep full color resolution until the encoder chooses its required format.
+  // Converting PNG/ProRes through 4:2:0 first destroys fine colored text edges.
+  if (!s.transparent) filters += `;color=c=black:s=${g.width}x${h}:r=${s.fps},format=rgba[black];[black][rounded]overlay=0:0:format=auto:shortest=1,format=rgba[out]`;
+  else filters += ';[rounded]format=rgba[out]';
   let codec;
   if (s.format === 'webm') codec = ['-c:v', 'libvpx', '-pix_fmt', s.transparent ? 'yuva420p' : 'yuv420p', '-b:v', '4M', '-crf', '10', '-deadline', 'realtime', '-cpu-used', '5', '-lag-in-frames', '0', '-auto-alt-ref', '0'];
   else if (s.format === 'mov') codec = ['-c:v', 'prores_ks', '-profile:v', '4', '-pix_fmt', 'yuva444p10le', '-alpha_bits', s.transparent ? '16' : '0', '-vendor', 'apl0'];

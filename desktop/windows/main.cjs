@@ -75,30 +75,41 @@ async function readFonts() {
   }
   return result;
 }
+function validFontHeader(data) {
+  return data.length >= 12 && ['00010000','4f54544f','74727565','774f4646','774f4632'].includes(data.subarray(0,4).toString('hex'));
+}
 async function importFonts() {
-  const picked = await dialog.showOpenDialog(win, { title:L('Dodaj fontove u Kajron Atomic Studio'), filters:[{ name:L('Fontovi (TTF / OTF / WOFF / WOFF2)'),extensions:['ttf','otf','woff','woff2'] }],properties:['openFile','multiSelections'] });
+  const picked = await dialog.showOpenDialog(win, { title: L('Dodaj fontove u Kajron Atomic Studio'), filters: [{ name: L('Fontovi (TTF / OTF / WOFF / WOFF2)'), extensions: ['ttf','otf','woff','woff2'] }], properties: ['openFile','multiSelections'] });
   if (picked.canceled) return;
-  const folder=path.join(app.getPath('userData'),'fonts');
+  const folder = path.join(app.getPath('userData'),'fonts');
   await fs.mkdir(folder,{recursive:true});
-  let selectedFamily=null;
-  let library=await readFonts();
-  let total=library.reduce((sum,font)=>sum+Buffer.byteLength(font.data,'base64'),0);
+  let selectedFamily = null;
+  let library = await readFonts();
+  let total = library.reduce((sum,font) => sum + Buffer.byteLength(font.data,'base64'),0);
+  const warnings = [];
   for (const file of picked.filePaths) {
-    const ext=path.extname(file).slice(1).toLowerCase();
-    if (!['ttf','otf','woff','woff2'].includes(ext)) throw new Error(L('Izaberi ispravan font.'));
-    if ((await fs.stat(file)).size>10000000) throw new Error(L('Font je prevelik. Najveća veličina fonta je 10 MB.'));
-    const data=await fs.readFile(file), hash=createHash('sha256').update(data).digest('hex');
-    const filename=hash+'.'+ext;
-    if (!(await fs.access(path.join(folder,filename)).then(()=>true,()=>false))) {
-      if (library.length>=32 || total+data.length>40000000) throw new Error(L('Biblioteka fontova je puna (32 fonta / 40 MB).'));
-      await fs.writeFile(path.join(folder,filename),data);
-      total+=data.length;
-    }
-    const item={family:'AtomicFont_'+hash,label:path.basename(file,path.extname(file)),file:filename};
-    await fs.writeFile(path.join(folder,hash+'.json'),JSON.stringify(item),'utf8');
-    selectedFamily=item.family; library=await readFonts();
+    try {
+      const ext = path.extname(file).slice(1).toLowerCase();
+      if (!['ttf','otf','woff','woff2'].includes(ext)) throw new Error(L('Izaberi ispravan font.'));
+      if ((await fs.stat(file)).size > 10000000) throw new Error(L('Font je prevelik. Najveća veličina fonta je 10 MB.'));
+      const data = await fs.readFile(file);
+      if (!validFontHeader(data)) throw new Error(L('Izaberi ispravan font.'));
+      const hash = createHash('sha256').update(data).digest('hex');
+      let filename = hash + '.' + ext;
+      const previous = await fs.readFile(path.join(folder,hash+'.json'),'utf8').then(JSON.parse).catch(() => null);
+      if (previous && typeof previous.file === 'string' && previous.file.startsWith(hash+'.') && /^[a-f0-9]{64}\.(ttf|otf|woff|woff2)$/.test(previous.file)) filename = previous.file;
+      if (!(await fs.access(path.join(folder,filename)).then(() => true,() => false))) {
+        if (library.length >= 32 || total + data.length > 40000000) throw new Error(L('Biblioteka fontova je puna (32 fonta / 40 MB).'));
+        await fs.writeFile(path.join(folder,filename),data);
+        total += data.length;
+      }
+      const item = { family: 'AtomicFont_'+hash, label: path.basename(file,path.extname(file)), file: filename };
+      await fs.writeFile(path.join(folder,hash+'.json'),JSON.stringify(item),'utf8');
+      selectedFamily = item.family;
+      library = await readFonts();
+    } catch (error) { warnings.push(path.basename(file) + ': ' + error.message); }
   }
-  send({type:'fontsLoaded',fonts:library,selectedFamily});
+  send({ type: 'fontsLoaded', fonts: library, selectedFamily, warning: warnings.slice(0,3).join(' · ') });
 }
 function createWindow() {
   win = new BrowserWindow({
@@ -130,9 +141,9 @@ function setupMenu() {
       { label: L('Prikaži poslednji video'), click: () => { if (completedPath) shell.showItemInFolder(completedPath); } },
       { type: 'separator' }, { role: 'quit', label: L('Zatvori Kajron Atomic Studio') }
     ] },
-    { label: L('Uređivanje'), submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: L('Prikaz'), submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] },
-    { label: L('Pomoć'), submenu: [{ label: L('Kako ubaciti kajron u OBS'), click: () => trigger('guide-open') }, { label: L('O aplikaciji'), click: () => dialog.showMessageBox(win, { message: 'Kajron Atomic Studio 1.5', detail: L('Lokalni generator video-kajrona za OBS. Svi resursi i video-pogon uključeni su u instalaciju. Internet nije potreban.') }) }] }
+    { label: L('Uređivanje'), submenu: [{ role: 'undo', label: L('Poništi') }, { role: 'redo', label: L('Ponovi') }, { type: 'separator' }, { role: 'cut', label: L('Iseci') }, { role: 'copy', label: L('Kopiraj') }, { role: 'paste', label: L('Nalepi') }, { role: 'selectAll', label: L('Izaberi sve') }] },
+    { label: L('Prikaz'), submenu: [{ role: 'resetZoom', label: L('Stvarna veličina') }, { role: 'zoomIn', label: L('Uvećaj') }, { role: 'zoomOut', label: L('Umanji') }, { role: 'togglefullscreen', label: L('Ceo ekran') }] },
+    { label: L('Pomoć'), submenu: [{ label: L('Kako ubaciti kajron u OBS'), click: () => trigger('guide-open') }, { label: L('O aplikaciji'), click: () => dialog.showMessageBox(win, { message: 'Kajron Atomic Studio ' + app.getVersion(), detail: L('Lokalni generator video-kajrona za OBS. Svi resursi i video-pogon uključeni su u instalaciju. Internet nije potreban.') }) }] }
   ]));
 }
 ipcMain.on('kajron-message', (event, message) => {

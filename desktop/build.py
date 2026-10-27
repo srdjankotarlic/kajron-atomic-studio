@@ -100,7 +100,7 @@ def build(destination, ffmpeg):
     info = {
         'CFBundleName': 'Kajron Atomic Studio', 'CFBundleDisplayName': 'Kajron Atomic Studio',
         'CFBundleIdentifier': 'rs.kajron.studio.local', 'CFBundleExecutable': 'KajronAtomicStudio',
-        'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.5.0', 'CFBundleVersion': '6',
+        'CFBundlePackageType': 'APPL', 'CFBundleShortVersionString': '1.5.1', 'CFBundleVersion': '7',
         'LSMinimumSystemVersion': minimum_version, 'NSHighResolutionCapable': True, 'CFBundleIconFile': 'AppIcon.icns',
         'NSPrincipalClass': 'NSApplication', 'NSHumanReadableCopyright': 'Kajron Atomic Studio · Local OBS media generator',
     }
@@ -114,7 +114,7 @@ def build(destination, ffmpeg):
     for name in ['LICENSE', 'THIRD_PARTY_NOTICES.md']:
         shutil.copy2(ROOT / name, notices / name)
     shutil.copy2(ROOT / 'desktop/encoder-sources.json', notices / 'encoder-sources.json')
-    (notices / 'FFmpeg-build.txt').write_text(run(ffmpeg, '-version') + '\nCorresponding source and build instructions: https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.0\n')
+    (notices / 'FFmpeg-build.txt').write_text(run(ffmpeg, '-version') + '\nCorresponding source and build instructions: https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.1\n')
     run('codesign', '--force', '--deep', '--sign', '-', app)
     run('codesign', '--verify', '--deep', '--strict', app)
     # Ensure the bundled engine has no dependency on a Homebrew installation.

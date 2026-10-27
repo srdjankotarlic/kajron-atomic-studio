@@ -9,10 +9,10 @@ RequestExecutionLevel user
 SetCompressor /SOLID lzma
 SetCompressorDictSize 8
 BrandingText "Kajron Atomic Studio 1.5 · Offline OBS video ticker"
-VIProductVersion "1.5.0.0"
+VIProductVersion "1.5.1.0"
 VIAddVersionKey "ProductName" "Kajron Atomic Studio"
 VIAddVersionKey "FileDescription" "Kajron Atomic Studio installer"
-VIAddVersionKey "FileVersion" "1.5.0"
+VIAddVersionKey "FileVersion" "1.5.1"
 VIAddVersionKey "LegalCopyright" "Kajron Atomic Studio"
 !define MUI_ICON "${PAYLOAD}\resources\app\icon.ico"
 !define MUI_UNICON "${PAYLOAD}\resources\app\icon.ico"
@@ -60,7 +60,7 @@ Section "Kajron Atomic Studio"
   CreateShortcut "$DESKTOP\Kajron Atomic Studio.lnk" "$INSTDIR\Kajron Atomic Studio.exe" "" "$INSTDIR\resources\app\icon.ico"
   CreateShortcut "$SMPROGRAMS\Kajron Atomic Studio\Deinstaliraj.lnk" "$INSTDIR\Uninstall.exe"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "DisplayName" "Kajron Atomic Studio"
-  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "DisplayVersion" "1.5.0"
+  WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "DisplayVersion" "1.5.1"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "InstallLocation" "$INSTDIR"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "DisplayIcon" "$INSTDIR\resources\app\icon.ico"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\KajronAtomicStudio" "UninstallString" '"$INSTDIR\Uninstall.exe"'

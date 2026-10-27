@@ -2,6 +2,16 @@
 
 **Offline OBS ticker, chyron and lower third video generator for Windows and macOS.**
 
+[![Preuzmi za Windows / Download for Windows](assets/download-windows.svg)](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Setup.exe)
+
+[![Preuzmi za Mac / Download for Mac](assets/download-mac.svg)](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-macOS.zip)
+
+**Klikni na plavo dugme da odmah skineš Windows instalater.** Pokreni preuzeti `.exe` i prati instalaciju. Oba jezika su uključena.
+
+**Click the blue button to download the Windows installer directly.** Run the downloaded `.exe`. English and Serbian are included.
+
+[Windows bez instalacije / Portable ZIP](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Portable.zip) · [Sva preuzimanja / All downloads](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest)
+
 [English](README.md) · [Srpski](docs/README.sr.md) · **[Download / Preuzmi](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest)**
 
 Type your text, adjust the font, colors, size and scroll speed, then export a real
@@ -20,9 +30,9 @@ GitHub's green **Code** button downloads source code, not an installer.
 
 | System | Download | Installation |
 | --- | --- | --- |
-| Windows 10/11, 64-bit Intel/AMD | `Kajron-Atomic-Studio-Setup-1.5.0.exe` | Run the installer. Desktop and Start shortcuts are created for your user. |
-| Windows portable | `Kajron-Atomic-Studio-Windows-Portable-1.5.0.zip` | Extract the **entire** folder and run `Kajron Atomic Studio.exe`. Keep all files together. |
-| macOS 13+, Apple Silicon | `Kajron-Atomic-Studio-macOS-1.5.0.zip` | Extract the app and move it to Applications. Intel Macs are not supported by this build. |
+| Windows 10/11, 64-bit Intel/AMD | [**Download Windows installer (.exe)**](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Setup.exe) | Run the installer. Desktop and Start shortcuts are created for your user. |
+| Windows portable | [Download portable ZIP](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Portable.zip) | Extract the **entire** folder and run `Kajron Atomic Studio.exe`. Keep all files together. |
+| macOS 13+, Apple Silicon | [**Download Mac app (.zip)**](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-macOS.zip) | Extract the app and move it to Applications. Intel Macs are not supported by this build. |
 
 The video encoder is included; users do not need to install FFmpeg, Node or Python.
 The Windows installer is unsigned. The Mac build is ad-hoc signed and is not

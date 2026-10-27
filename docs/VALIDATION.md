@@ -1,15 +1,17 @@
-# Validation — 1.5.0
+# Validation — 1.5.1
 
 | Check | Result |
 | --- | --- |
 | macOS native build and ad-hoc signature verification | Passed |
 | English / Serbian UI, native menu switching, text preservation | Passed in the running Mac application |
 | Language persistence and dynamic status translation | Passed automated tests |
+| Overlapping font loads, startup restore and explicit user choices | Passed regression tests |
+| MOV PNG fine color detail | All 64000 RGBA pixels match exactly in four alpha/quality combinations |
 | Imported font load and persistence | Passed in the Mac app; Windows storage/import functions checked with real font bytes |
 | MP4 / H.264, WebM / VP9, MOV / PNG and MOV / ProRes | Passed actual encoder tests on both platform binaries |
 | Text-only transparency in WebM and MOV | Passed; decoded frames checked for transparent empty regions and visible letters |
 | Output dimensions and duration | Passed on decoded test files |
-| Compact MOV comparison | About 72% smaller than ProRes in the synthetic test; actual sizes vary |
+| Compact MOV comparison | About 79% smaller than ProRes in the synthetic test; actual sizes vary |
 | Windows runtime dependency inspection | Only system Windows DLLs required by the standalone encoder |
 | Mac encoder dependency inspection | Only system macOS frameworks; no Homebrew libraries required |
 

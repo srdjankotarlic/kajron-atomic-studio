@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="90" viewBox="0 0 440 90" role="img" aria-label="Preuzmi za Windows — Download Windows installer">
+  <rect width="440" height="90" rx="14" fill="#0969da"/>
+  <path d="M36 23v29m-10-10 10 10 10-10M23 61h26" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="70" y="39" fill="#fff" font-family="Arial, sans-serif" font-size="25" font-weight="700">Preuzmi za Windows</text>
+  <text x="70" y="64" fill="#e9f2ff" font-family="Arial, sans-serif" font-size="15">Download for Windows · Instalater (.exe)</text>
+</svg>

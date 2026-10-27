@@ -6,7 +6,7 @@ Bundled third party components retain their own licenses and copyrights.
 
 ## Video encoder
 
-Release 1.5.0 includes a minimal FFmpeg 8.1.2 build compiled from the following
+Release 1.5.1 includes a minimal FFmpeg 8.1.2 build compiled from the following
 unmodified source archives. Exact URLs and SHA-256 hashes are recorded in
 [`desktop/encoder-sources.json`](desktop/encoder-sources.json).
 

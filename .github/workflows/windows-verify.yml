@@ -5,11 +5,13 @@ on:
       tag:
         description: Release tag to test
         required: true
-        default: v1.5.0
+        default: v1.5.1
 permissions:
   contents: read
 jobs:
   windows:
+    permissions:
+      contents: write # GitHub requires this to read draft release assets.
     runs-on: windows-latest
     timeout-minutes: 15
     steps:
@@ -38,8 +40,53 @@ jobs:
           $process = Start-Process -FilePath (Join-Path $payload 'Kajron Atomic Studio.exe') -Wait -PassThru
           if (Test-Path $env:KAJRON_SMOKE_REPORT) { Get-Content $env:KAJRON_SMOKE_REPORT }
           if ($process.ExitCode -ne 0) { throw 'Application smoke failed' }
+      - name: Test shipped main process, projects, fonts, cancellation and overwrite
+        shell: pwsh
+        run: |
+          $payload = (Get-ChildItem package/unpacked -Directory).FullName
+          $appDir = Join-Path $payload 'resources/app'
+          Copy-Item tests/windows-native.cjs (Join-Path $appDir 'native-check.cjs')
+          $pkgPath = Join-Path $appDir 'package.json'
+          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+          $pkg.main = 'native-check.cjs'
+          $pkg | ConvertTo-Json | Set-Content -Encoding utf8 $pkgPath
+          $env:KAJRON_SMOKE_REPORT = Join-Path $env:RUNNER_TEMP 'atomic-native/report.json'
+          $process = Start-Process -FilePath (Join-Path $payload 'Kajron Atomic Studio.exe') -Wait -PassThru
+          if (Test-Path $env:KAJRON_SMOKE_REPORT) { Get-Content $env:KAJRON_SMOKE_REPORT }
+          if ($process.ExitCode -ne 0) { throw 'Native integration failed' }
+          $report = Get-Content $env:KAJRON_SMOKE_REPORT -Raw | ConvertFrom-Json
+          if (-not $report.pass -or $report.exports.Count -ne 6) { throw 'Incomplete native results' }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Independently verify every color pixel in the Windows MOV
+        shell: pwsh
+        run: |
+          python -m pip install Pillow
+          python tests/check_windows_pixels.py "$env:RUNNER_TEMP/atomic-native"
+      - name: Install, reinstall, uninstall and preserve user files
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem package/*Setup*.exe).FullName
+          $process = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Installer failed' }
+          $install = Join-Path $env:LOCALAPPDATA 'Programs/Kajron Atomic Studio'
+          $meta = Get-Content (Join-Path $install 'resources/app/package.json') -Raw | ConvertFrom-Json
+          if ($meta.main -ne 'main.cjs') { throw 'Installed entry point is incorrect' }
+          if (-not (Test-Path (Join-Path $env:USERPROFILE 'Desktop/Kajron Atomic Studio.lnk'))) { throw 'Desktop shortcut missing' }
+          $kept = Join-Path $install 'user-kept.txt'
+          'preserve user file' | Set-Content $kept
+          $process = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if (-not (Test-Path $kept)) { throw 'Reinstallation removed a user file' }
+          $process = Start-Process -FilePath (Join-Path $install 'Uninstall.exe') -ArgumentList '/S' -Wait -PassThru
+          $deadline = (Get-Date).AddSeconds(30)
+          while ((Test-Path (Join-Path $install 'Kajron Atomic Studio.exe')) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200 }
+          if (Test-Path (Join-Path $install 'Kajron Atomic Studio.exe')) { throw 'Uninstaller did not remove the application' }
+          if (-not (Test-Path $kept)) { throw 'Uninstaller removed an unrelated user file' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: windows-report
-          path: ${{ runner.temp }}/atomic-smoke/
+          path: |
+            ${{ runner.temp }}/atomic-smoke/
+            ${{ runner.temp }}/atomic-native/

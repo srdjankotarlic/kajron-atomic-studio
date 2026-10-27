@@ -225,5 +225,10 @@
   "Slika kajrona nije PNG.": "Ticker image is not a PNG.",
   "Video nije napravljen. Pokušaj samo traku ili manju rezoluciju.": "Video could not be created. Try ticker strip only or a smaller resolution.",
   "Lokalni generator video-kajrona za OBS. Svi resursi i video-pogon uključeni su u instalaciju. Internet nije potreban.": "Offline video ticker generator for OBS. All resources and the video encoder are included. No internet required.",
-  "Lokalni generator video-kajrona za OBS.\nWebM / MOV sa alpha kanalom · MP4 H.264\nObrada radi na ovom Mac-u, bez interneta.": "Offline video ticker generator for OBS.\nWebM / MOV with alpha · MP4 H.264\nEverything runs locally on this Mac."
+  "Lokalni generator video-kajrona za OBS.\nWebM / MOV sa alpha kanalom · MP4 H.264\nObrada radi na ovom Mac-u, bez interneta.": "Offline video ticker generator for OBS.\nWebM / MOV with alpha · MP4 H.264\nEverything runs locally on this Mac.",
+  "Sačuvaj video, pa ga u OBS-u dodaj kao Media Source i uključi Loop.": "Save the video, then add it as a Media Source in OBS and enable Loop.",
+  "Ponovi": "Redo",
+  "Stvarna veličina": "Actual size",
+  "Uvećaj": "Zoom in",
+  "Umanji": "Zoom out"
 }

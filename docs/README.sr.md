@@ -2,6 +2,12 @@
 
 **Lokalna desktop aplikacija za video-kajrone, pokretne vesti i natpise za OBS.**
 
+[![Preuzmi za Windows](../assets/download-windows.svg)](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Setup.exe)
+
+[![Preuzmi za Mac](../assets/download-mac.svg)](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-macOS.zip)
+
+**Klikni na plavo dugme i odmah se preuzima Windows instalater.** Pokreni preuzeti `.exe`; program pravi prečicu na Desktopu.
+
 [English](../README.md) · **Srpski** · **[Preuzmi program](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest)**
 
 Unesi tekst, podesi font, boje, dimenzije i brzinu, pa izvezi pravi **WebM, MOV ili
@@ -18,9 +24,9 @@ Zeleno GitHub dugme **Code** preuzima izvorni kod, a ne instalacioni program.
 
 | Računar | Fajl | Instalacija |
 | --- | --- | --- |
-| Windows 10/11, 64-bit Intel/AMD | `Kajron-Atomic-Studio-Setup-1.5.0.exe` | Pokreni instalater. Pravi prečice na Desktopu i u Start meniju. Ne traži administratorska prava. |
-| Windows bez instalacije | `Kajron-Atomic-Studio-Windows-Portable-1.5.0.zip` | Raspakuj **ceo** folder i pokreni `Kajron Atomic Studio.exe`. Prenosi sve njegove fajlove zajedno. |
-| Mac sa Apple Silicon procesorom, macOS 13+ | `Kajron-Atomic-Studio-macOS-1.5.0.zip` | Raspakuj aplikaciju i premesti je u Applications. Ovaj paket nije za Intel Mac. |
+| Windows 10/11, 64-bit Intel/AMD | [**Preuzmi za Windows (.exe)**](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Setup.exe) | Pokreni instalater. Pravi prečice na Desktopu i u Start meniju. Ne traži administratorska prava. |
+| Windows bez instalacije | [Portable ZIP](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-Windows-Portable.zip) | Raspakuj **ceo** folder i pokreni `Kajron Atomic Studio.exe`. Prenosi sve njegove fajlove zajedno. |
+| Mac sa Apple Silicon procesorom, macOS 13+ | [**Preuzmi za Mac (.zip)**](https://github.com/srdjankotarlic/kajron-atomic-studio/releases/latest/download/Kajron-Atomic-Studio-macOS.zip) | Raspakuj aplikaciju i premesti je u Applications. Ovaj paket nije za Intel Mac. |
 
 Video-pogon je uključen. Korisniku nisu potrebni FFmpeg, Node, Python niti druge
 alatke za izgradnju. Windows instalater nema izdavački digitalni potpis. Mac ima

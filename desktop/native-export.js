@@ -18,7 +18,7 @@ window.desktopEvent = (event) => {
     finishNativeExport();
     $('export-result').hidden = false;
     $('export-result').firstElementChild.textContent = `✓ Sačuvan ${String(event.format || '').toUpperCase()} video · ${(event.bytes / 1048576).toFixed(1)} MB`;
-    $('download-again').textContent = 'Prikaži u Finder-u ↗';
+    $('download-again').textContent = window.kajronDesktop ? 'Prikaži u folderu ↗' : 'Prikaži u Finder-u ↗';
     $('download-again').title = event.path;
     $('saved-path').textContent = event.path;
     $('saved-path').hidden = false;
@@ -28,13 +28,16 @@ window.desktopEvent = (event) => {
   if (event.type === 'failed') { finishNativeExport(); $('saved-path').textContent = event.message; $('saved-path').hidden = false; toast(event.message); }
   if (event.type === 'notice') toast(event.message);
   if (event.type === 'projectLoaded') {
+    fontsReady.then(() => fontInstallQueue).then(() => {
     try {
       const parsed = event.project;
       if (!['Kajron Studio', 'Kajron Atomic Studio'].includes(parsed.app) || parsed.version !== 1 || typeof parsed.settings?.text !== 'string') throw new Error();
+      noteFontChoice();
       const missingFont = /^AtomicFont_/.test(parsed.settings.font || '') && !enums.font.includes(parsed.settings.font);
       state = sanitize(parsed.settings); playTime = 0; updateUI(true); persist(); refreshExportAction();
       toast(missingFont ? 'Projekat je učitan. Dodaj njegov TTF/OTF font na ovom računaru; privremeno je izabran Arial.' : 'Projekat je učitan.');
     } catch { toast('Izaberi ispravan Kajron Atomic Studio JSON projekat.'); }
+    });
   }
 };
 async function encodeBase64(bytes) {
@@ -72,6 +75,7 @@ $('download-again').addEventListener('click', e => { e.preventDefault(); native(
 $('save-project').addEventListener('click', () => native({ action: 'saveProject', contents: JSON.stringify({ app: 'Kajron Atomic Studio', version: 1, settings: state }, null, 2) }));
 $('import-project').addEventListener('click', () => native({ action: 'loadProject' }));
 $('add-fonts').addEventListener('click', () => native({ action: 'importFonts' }));
+$('font').addEventListener('input', noteFontChoice);
 $('fullscreen').addEventListener('click', () => native({ action: 'fullscreen' }));
 document.querySelector('.brand').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 

@@ -128,6 +128,10 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
             return ["family": family, "label": label, "data": data.base64EncodedString()]
         }
     }
+    func validFontHeader(_ data: Data) -> Bool {
+        let headers = [Data([0, 1, 0, 0]), Data("OTTO".utf8), Data("true".utf8), Data("wOFF".utf8), Data("wOF2".utf8)]
+        return data.count >= 12 && headers.contains(Data(data.prefix(4)))
+    }
     func importFonts() {
         let panel = NSOpenPanel()
         panel.title = self.L("Dodaj fontove u Kajron Atomic Studio")
@@ -139,15 +143,25 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
                 let folder = self.fontFolder()
                 try self.fm.createDirectory(at: folder, withIntermediateDirectories: true)
                 var selected: String?
-                var total = self.readFonts().reduce(0) { $0 + ($1["data"]?.utf8.count ?? 0) * 3 / 4 }
+                var total = self.readFonts().reduce(0) { $0 + (Data(base64Encoded: $1["data"] ?? "")?.count ?? 0) }
+                var warnings: [String] = []
                 for url in panel.urls {
+                    do {
                     let ext = url.pathExtension.lowercased()
                     guard ["ttf", "otf", "woff", "woff2"].contains(ext) else { throw StudioError(self.L("Izaberi TTF, OTF, WOFF ili WOFF2 font.")) }
                     let attrs = try self.fm.attributesOfItem(atPath: url.path)
                     guard (attrs[.size] as? Int ?? 0) <= 10_000_000 else { throw StudioError(self.L("Font je prevelik. Najveća veličina pojedinačnog fonta je 10 MB.")) }
                     let data = try Data(contentsOf: url)
+                    guard self.validFontHeader(data) else { throw StudioError(self.L("Izaberi ispravan font.")) }
                     let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-                    let filename = hash + "." + ext
+                    var filename = hash + "." + ext
+                    let metadata = folder.appendingPathComponent(hash + ".json")
+                    if let previousData = try? Data(contentsOf: metadata),
+                       let previous = try? JSONSerialization.jsonObject(with: previousData) as? [String: String],
+                       let previousFile = previous["file"], previousFile.hasPrefix(hash + "."),
+                       previousFile.range(of: "^[a-f0-9]{64}\\.(ttf|otf|woff|woff2)$", options: .regularExpression) != nil {
+                        filename = previousFile
+                    }
                     if !self.fm.fileExists(atPath: folder.appendingPathComponent(filename).path) {
                         guard self.readFonts().count < 32, total + data.count <= 40_000_000 else { throw StudioError(self.L("Biblioteka fontova je puna (32 fonta / 40 MB).")) }
                         try data.write(to: folder.appendingPathComponent(filename), options: .atomic)
@@ -157,8 +171,9 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
                     let item = ["family": family, "label": url.deletingPathExtension().lastPathComponent, "file": filename]
                     try JSONSerialization.data(withJSONObject: item).write(to: folder.appendingPathComponent(hash + ".json"), options: .atomic)
                     selected = family
+                    } catch { warnings.append(url.lastPathComponent + ": " + error.localizedDescription) }
                 }
-                self.send(["type": "fontsLoaded", "fonts": self.readFonts(), "selectedFamily": selected ?? ""])
+                self.send(["type": "fontsLoaded", "fonts": self.readFonts(), "selectedFamily": selected ?? "", "warning": warnings.prefix(3).joined(separator: " · ")])
             } catch { self.send(["type": "notice", "message": "Font nije dodat: \(error.localizedDescription)"]) }
         }
     }
@@ -206,7 +221,7 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
         totalFrames = max(1, body["frames"] as? Int ?? 1)
         let panel = NSSavePanel()
         panel.title = self.L("Izvezi kajron kao video")
-        panel.message = "Sačuvaj video, pa ga u OBS-u dodaj kao Media Source i uključi Loop."
+        panel.message = self.L("Sačuvaj video, pa ga u OBS-u dodaj kao Media Source i uključi Loop.")
         panel.allowedContentTypes = [ext == "mp4" ? .mpeg4Movie : ext == "mov" ? .quickTimeMovie : (UTType(filenameExtension: "webm") ?? .movie)]
         panel.allowsOtherFileTypes = false
         panel.isExtensionHidden = false

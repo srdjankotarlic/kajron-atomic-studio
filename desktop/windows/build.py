@@ -58,10 +58,10 @@ def build(output):
         shutil.copy2(ROOT / name, licenses / name)
     shutil.copy2(ROOT / 'desktop/encoder-sources.json', licenses / 'encoder-sources.json')
     (app / 'BUILD-PROVENANCE.json').write_text(json.dumps({
-        'app_version': '1.5.0', 'platform': 'win32-x64', 'electron_version': '45.0.0',
+        'app_version': '1.5.1', 'platform': 'win32-x64', 'electron_version': '45.0.0',
         'electron_release': 'https://github.com/electron/electron/releases/tag/v45.0.0',
         'electron_zip_sha256': expected,
-        'ffmpeg_source': 'https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.0',
+        'ffmpeg_source': 'https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.1',
         'ffmpeg_version': '8.1.2',
         'ffmpeg_exe_sha256': hashlib.sha256(engine.read_bytes()).hexdigest(),
         'encoder_sources': json.loads((ROOT / 'desktop/encoder-sources.json').read_text())
@@ -78,9 +78,9 @@ def package(payload, output):
     folders = sorted([p for p in payload.rglob('*') if p.is_dir()], key=lambda p: len(p.parts), reverse=True)
     commands += ['RMDir "$INSTDIR\\' + str(p.relative_to(payload)).replace('/', '\\') + '"' for p in folders]
     delete_list.write_text('\n'.join(commands) + '\n')
-    installer = output / 'Kajron-Atomic-Studio-Setup-1.5.0.exe'
+    installer = output / 'Kajron-Atomic-Studio-Setup-1.5.1.exe'
     subprocess.run(['makensis', '-V2', f'-DPAYLOAD={payload}', f'-DINSTALLER={installer}', f'-DDELETE_LIST={delete_list}', f'-DSIZE_KB={sum(p.stat().st_size for p in files)//1024}', str(ROOT / 'desktop/windows/installer.nsi')], check=True)
-    portable = output / 'Kajron-Atomic-Studio-Windows-Portable-1.5.0.zip'
+    portable = output / 'Kajron-Atomic-Studio-Windows-Portable-1.5.1.zip'
     with zipfile.ZipFile(portable, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for f in files:
             z.write(f, f.relative_to(output))
