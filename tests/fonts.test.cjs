@@ -39,6 +39,12 @@ test('stored custom font returns after restart when no newer choice was made',as
   await f.context.installFontChoices({fonts:[asset]});
   assert.equal(f.context.state.font,family);
 });
+test('saving text during startup keeps the custom font that is still loading',async()=>{
+  const f=fixture(family);
+  assert.equal(f.context.settingsForStorage(f.context.state).font,family);
+  f.context.noteFontChoice();f.context.state.font='Verdana';
+  assert.equal(f.context.settingsForStorage(f.context.state).font,'Verdana');
+});
 test('partial import keeps successful fonts and displays the failure notice',async()=>{
   const f=fixture();
   await f.context.installFontChoices({fonts:[asset],selectedFamily:family,warning:'Broken font was skipped'});

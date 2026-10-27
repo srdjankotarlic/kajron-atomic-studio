@@ -54,6 +54,12 @@ app.whenReady().then(async()=>{
     await until(()=>Menu.getApplicationMenu().items[0].label==='File','English native menu');
     assert.equal(await evaluate('state.text'),text);
   });
+  await check('last keystroke survives an immediate renderer restart',async()=>{
+    await evaluate("$('text').value='Instant save ČĆŽŠĐ';$('text').dispatchEvent(new Event('input',{bubbles:true}))");
+    win.webContents.reload();
+    await until(async()=>!win.webContents.isLoading()&&await evaluate('fontLibraryLoaded'),'immediate reload');
+    assert.equal(await evaluate('state.text'),'Instant save ČĆŽŠĐ');
+  });
   await check('project save, overwrite and open through native IPC',async()=>{
     await evaluate("state=sanitize({...state,text:'Project ČĆŽŠĐ \\u2605',textOnly:true});updateUI(true)");
     const project=path.join(output,"projekat čćžšđ 'test'.json");

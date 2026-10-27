@@ -6,6 +6,10 @@ let fontInstallQueue = Promise.resolve();
 let resolveFontsReady;
 const fontsReady = new Promise(resolve => { resolveFontsReady = resolve; });
 function noteFontChoice() { fontChoiceVersion++; }
+function settingsForStorage(settings) {
+  // Keep the saved custom font identifier while its FontFace is still loading.
+  return !fontLibraryLoaded && fontChoiceVersion === 0 && /^AtomicFont_[a-f0-9]{64}$/.test(pendingCustomFont || '') ? { ...settings, font: pendingCustomFont } : settings;
+}
 try { pendingCustomFont = JSON.parse(localStorage.getItem('kajron-studio-project-v1'))?.font || null; } catch {}
 function installFontChoices(event) {
   const version = fontChoiceVersion;

@@ -5,6 +5,7 @@
 | macOS native build and ad-hoc signature verification | Passed |
 | English / Serbian UI, native menu switching, text preservation | Passed in the running Mac application |
 | Language persistence and dynamic status translation | Passed automated tests |
+| Saving the last edit before an immediate restart | Regression check included |
 | Overlapping font loads, startup restore and explicit user choices | Passed regression tests |
 | MOV PNG fine color detail | All 64000 RGBA pixels match exactly in four alpha/quality combinations |
 | Imported font load and persistence | Passed in the Mac app; Windows storage/import functions checked with real font bytes |
@@ -15,10 +16,20 @@
 | Windows runtime dependency inspection | Only system Windows DLLs required by the standalone encoder |
 | Mac encoder dependency inspection | Only system macOS frameworks; no Homebrew libraries required |
 
-Windows encoder tests run the actual Windows executable through an isolated
-CrossOver/Wine environment. This does not constitute interactive testing on a
-physical Windows computer. The repository includes `tests/windows-smoke.cjs`
-for a native Windows Electron/renderer/export check on a disposable test copy.
+The full Windows integration suite runs on a real GitHub-hosted Windows runner,
+using the packaged Electron runtime, the shipped main process, sandboxed preload,
+trusted IPC and bundled Windows encoder. Native file picker answers are supplied
+by the test so it can run unattended. It checks projects, custom fonts and language
+persistence, six export combinations, cancellation, closing during export,
+overwriting an existing video, invalid inputs and the minimum window size. A
+separate Python/Pillow check compares all 64000 RGBA pixels in a Windows MOV PNG
+fixture. Installer, reinstallation and uninstallation are tested while preserving
+an unrelated user file.
+
+macOS checks use the native app in a separate test profile: custom-font import
+with an invalid file, project save/open, transparent MOV export, 4K cancellation
+and font/text persistence after restarting. Exported frames are independently
+decoded for alpha-channel checks. Test profiles do not alter user projects.
 
 The app packages contain no user projects, imported fonts, saved preferences or
 sample exports made from private text. Release archive integrity and SHA-256

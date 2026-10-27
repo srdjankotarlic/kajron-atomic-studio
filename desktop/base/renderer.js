@@ -40,8 +40,8 @@ let state;
 try { state = sanitize(JSON.parse(localStorage.getItem('kajron-studio-project-v1')) || defaults); } catch { state = { ...defaults }; }
 let toastTimer;
 function toast(message) { $('toast').textContent = message; $('toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('show'), 5000); }
-let storeTimer;
-function persist() { clearTimeout(storeTimer); storeTimer = setTimeout(() => { try { localStorage.setItem('kajron-studio-project-v1', JSON.stringify(state)); } catch { toast('Pregledač ne dozvoljava čuvanje. Koristi „Sačuvaj projekat”.'); } }, 200); }
+// Persist the small project immediately so a quick close cannot drop the last edit.
+function persist() { try { localStorage.setItem('kajron-studio-project-v1', JSON.stringify(settingsForStorage(state))); } catch { toast('Pregledač ne dozvoljava čuvanje. Koristi „Sačuvaj projekat”.'); } }
 
 const preview = $('preview'), ctx = preview.getContext('2d');
 const measure = document.createElement('canvas').getContext('2d');

@@ -72,7 +72,7 @@ $('export').addEventListener('click', async () => {
 });
 $('cancel-export').addEventListener('click', () => { cancelled = true; native({ action: 'cancel' }); });
 $('download-again').addEventListener('click', e => { e.preventDefault(); native({ action: 'reveal' }); });
-$('save-project').addEventListener('click', () => native({ action: 'saveProject', contents: JSON.stringify({ app: 'Kajron Atomic Studio', version: 1, settings: state }, null, 2) }));
+$('save-project').addEventListener('click', () => native({ action: 'saveProject', contents: JSON.stringify({ app: 'Kajron Atomic Studio', version: 1, settings: settingsForStorage(state) }, null, 2) }));
 $('import-project').addEventListener('click', () => native({ action: 'loadProject' }));
 $('add-fonts').addEventListener('click', () => native({ action: 'importFonts' }));
 $('font').addEventListener('input', noteFontChoice);
