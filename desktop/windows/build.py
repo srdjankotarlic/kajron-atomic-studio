@@ -58,15 +58,15 @@ def build(output):
         shutil.copy2(ROOT / name, licenses / name)
     shutil.copy2(ROOT / 'desktop/encoder-sources.json', licenses / 'encoder-sources.json')
     (app / 'BUILD-PROVENANCE.json').write_text(json.dumps({
-        'app_version': '1.5.1', 'platform': 'win32-x64', 'electron_version': '45.0.0',
+        'app_version': '1.5.2', 'platform': 'win32-x64', 'electron_version': '45.0.0',
         'electron_release': 'https://github.com/electron/electron/releases/tag/v45.0.0',
         'electron_zip_sha256': expected,
-        'ffmpeg_source': 'https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.1',
+        'ffmpeg_source': 'https://github.com/srdjankotarlic/kajron-atomic-studio/releases/tag/v1.5.2',
         'ffmpeg_version': '8.1.2',
         'ffmpeg_exe_sha256': hashlib.sha256(engine.read_bytes()).hexdigest(),
         'encoder_sources': json.loads((ROOT / 'desktop/encoder-sources.json').read_text())
     }, indent=2))
-    (payload / 'README.txt').write_text('KAJRON ATOMIC STUDIO 1.5 — WINDOWS 10/11 x64\n\nRun Kajron Atomic Studio.exe. Keep this entire folder together. Works offline.\nChoose English / Srpski at the top of the app.\nFor smaller files: WebM + Smaller file + Ticker strip only.\nFor transparent text: Text only, then export WebM or MOV.\nOBS: Media Source > Local File > choose the exported video > Loop.\n\nPokreni Kajron Atomic Studio.exe. Prenesi CEO folder. Radi bez interneta.\nNa vrhu izaberi English / Srpski. Za prozirnost: Samo slova, WebM ili MOV.\n\nDownloads, help, licenses and encoder sources:\nhttps://github.com/srdjankotarlic/kajron-atomic-studio\nThis build is unsigned / Paket nema izdavacki digitalni potpis.\n', encoding='utf-8')
+    (payload / 'README.txt').write_text('KAJRON ATOMIC STUDIO 1.5.2 — WINDOWS 10/11 x64\n\nRun Kajron Atomic Studio.exe. Keep this entire folder together. Works offline.\nChoose English / Srpski at the top of the app.\nFor smaller files: WebM + Smaller file + Ticker strip only.\nFor transparent text: Text only, then export WebM or MOV.\nOBS: Media Source > Local File > choose the exported video > Loop.\n\nPokreni Kajron Atomic Studio.exe. Prenesi CEO folder. Radi bez interneta.\nNa vrhu izaberi English / Srpski. Za prozirnost: Samo slova, WebM ili MOV.\n\nDownloads, help, licenses and encoder sources:\nhttps://github.com/srdjankotarlic/kajron-atomic-studio\nThis build is unsigned / Paket nema izdavacki digitalni potpis.\n', encoding='utf-8')
     for f in [*app.glob('*.cjs'), script]:
         subprocess.run(['node', '--check', str(f)], check=True)
     package(payload, output)
@@ -78,9 +78,9 @@ def package(payload, output):
     folders = sorted([p for p in payload.rglob('*') if p.is_dir()], key=lambda p: len(p.parts), reverse=True)
     commands += ['RMDir "$INSTDIR\\' + str(p.relative_to(payload)).replace('/', '\\') + '"' for p in folders]
     delete_list.write_text('\n'.join(commands) + '\n')
-    installer = output / 'Kajron-Atomic-Studio-Setup-1.5.1.exe'
+    installer = output / 'Kajron-Atomic-Studio-Setup-1.5.2.exe'
     subprocess.run(['makensis', '-V2', f'-DPAYLOAD={payload}', f'-DINSTALLER={installer}', f'-DDELETE_LIST={delete_list}', f'-DSIZE_KB={sum(p.stat().st_size for p in files)//1024}', str(ROOT / 'desktop/windows/installer.nsi')], check=True)
-    portable = output / 'Kajron-Atomic-Studio-Windows-Portable-1.5.1.zip'
+    portable = output / 'Kajron-Atomic-Studio-Windows-Portable-1.5.2.zip'
     with zipfile.ZipFile(portable, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         for f in files:
             z.write(f, f.relative_to(output))
