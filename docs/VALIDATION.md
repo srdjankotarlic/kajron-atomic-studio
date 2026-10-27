@@ -1,4 +1,23 @@
-# Validation — 1.5.1
+# Validation — 1.5.2
+
+This release only removes the introductory banner from the shared HTML and updates
+package version metadata. The editor and preview are the first content in `main`
+in both Mac and Windows packages; no empty heading container remains.
+
+- All 10 existing automated regression tests passed.
+- The native Mac build and deep/strict ad-hoc signature verification passed.
+- The updated installed Mac app was opened: the banner is absent and the existing
+  project, selected settings and imported-font library are retained.
+- Both completed ZIP archives passed integrity checks. Their packaged HTML was
+  checked for the removed banner and the presence of all primary editing/export
+  controls. Uploaded release files match local SHA-256 hashes.
+- Passed: [native Windows verification for these exact 1.5.2 packages](https://github.com/srdjankotarlic/kajron-atomic-studio/actions/runs/40513902324).
+
+The unchanged encoder and rendering behavior were also checked in the preceding
+release as recorded below. These are historical results, not additional Mac
+export runs performed for this HTML-only change.
+
+## Previous verification — 1.5.1
 
 **All checks below passed.** [Native Windows run, including installer checks](https://github.com/srdjankotarlic/kajron-atomic-studio/actions/runs/40510628622). The release includes a machine-readable `VERIFICATION.json`.
 
