@@ -29,6 +29,7 @@ def picker(method,next_method,replace):
  s=s[:start]+part+s[end:]
 url=lambda p:'URL(fileURLWithPath: '+json.dumps(str(p),ensure_ascii=False)+')'
 picker('    func importGraphics(', '    func fontFolder(', [('panel.urls','['+','.join(url(p) for p in sorted(fixtures.iterdir()))+']')])
+picker('    func importFonts(', '    @objc func openProject()', [('panel.urls', '['+url(Path('/System/Library/Fonts/Supplemental/Arial.ttf'))+']')])
 project=output/'project-with-artwork.json'
 for method,next_method in [('    @objc func openProject()', '    func saveProjectFile('),('    func saveProjectFile(', '    func beginExport(')]:
  picker(method,next_method,[('guard response == .OK, let url = panel.url else { return }','guard response == .OK else { return }; let url = '+url(project))])
@@ -39,15 +40,17 @@ function check(ok,label){if(!ok)throw new Error(label);checks.push(label);}
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,label){for(let n=0;n<400;n++){if(fn())return;await delay(50);}throw new Error(label);}
 await Promise.all([fontsReady,graphicsReady]);await fontInstallQueue;
+native({action:'importFonts'});await until(()=>/^AtomicFont_/.test(state.font),'native custom font import');await fontInstallQueue;
 check(document.querySelectorAll('[data-preset]').length===15,'15 designs');
 for(const item of STUDIO_DESIGNS){applyDesign(item.id);check(geometry.contentWidth>0&&geometry.contentHeight>0,'render '+item.id);}
-state=sanitize({...state,text:'Mac client ČĆŽŠĐ',font:'Arial',resolution:'custom',customWidth:640,customHeight:360,barHeight:100,margin:0,position:'bottom',fontSize:32,motion:'static',format:'mov',quality:'compact',transparent:true,staticDuration:5,graphics:[]});updateUI(true);
+state=sanitize({...state,text:'Mac client ČĆŽŠĐ',bold:true,resolution:'custom',customWidth:640,customHeight:360,barHeight:100,margin:0,position:'bottom',fontSize:32,motion:'static',format:'mov',quality:'compact',transparent:true,staticDuration:5,graphics:[]});updateUI(true);
 native({action:'importGraphics',kind:'background'});
 await until(()=>state.graphics.length===4,'PNG/JPG/WebP/SVG import');await graphicsQueue;
 check(state.graphics.length===4,'all four image formats imported; broken PNG skipped');
 state=sanitize({...state,graphics:state.graphics.slice(0,2),textX:22,textY:15,textWidth:70,textHeight:70,scope:'frame'});
 state.graphics[1]={...state.graphics[1],anchor:'frame',x:80,y:5,width:15,height:15};playing=false;updateUI(true);paintPreview(0);
 check(ctx.getImageData(550,40,1,1).data[0]===255,'frame artwork visible outside ticker');
+await readyTextFont(state);updateUI();paintPreview(0);
 const expected=preview.toDataURL('image/png').split(',')[1];
 $('save-project').click();await until(()=>$('toast').textContent.includes('project-with-artwork.json'),'native project save');
 state=sanitize({...state,text:'temporary',graphics:[]});updateUI(true);$('import-project').click();

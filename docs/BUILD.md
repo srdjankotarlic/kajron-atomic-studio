@@ -1,4 +1,4 @@
-# Building Kajron Atomic Studio 1.5
+# Building Kajron Atomic Studio 2.0
 
 End users should download the ready-made release. These instructions are for developers.
 No private credentials or service accounts are needed to build.
@@ -10,6 +10,7 @@ No private credentials or service accounts are needed to build.
 - `desktop/i18n.js`, `translations.json`: English / Serbian interface and messages.
 - `desktop/KajronStudio.swift`: native macOS shell, dialogs, fonts and export process.
 - `desktop/windows/`: Electron shell, sandboxed preload and Windows export backend.
+- `desktop/graphics.js`, `designs.json`, `design-tools.*`: image layers, editable designs and local UI.
 - `desktop/encoding.js`: shared codec and quality settings.
 - `desktop/build_encoder.py`: minimal FFmpeg and dependency build recipe.
 
@@ -84,3 +85,22 @@ decode and inspect outputs. The bundled encoder intentionally only reads PNG
 layers and encodes the supported formats; it is not a general-purpose decoder.
 
 The Windows smoke test can run against a disposable copy of the portable package. Copy `tests/windows-smoke.cjs` into `resources/app/smoke.cjs`, change that copy's `package.json` main to `smoke.cjs`, and launch its executable with `KAJRON_SMOKE_REPORT` pointing to a JSON report path. It loads the bundled renderer, switches languages, imports a system font and performs real exports with the Windows encoder. It uses sample text and a temporary user-data folder. Do not modify an installed user copy for this test.
+
+
+The native Windows suite also checks the 15 designs, native image import, SVG
+rasterization, a portable project restored into an empty image library, user
+design persistence, text-only mode with retained hidden artwork, and PNG frames
+in exported MOVs compared with the actual preview. Only picker answers are
+stubbed; the shipped renderer, IPC, image storage and encoder remain real.
+
+For a Mac test profile, build the app, then run:
+
+```sh
+python3 tests/mac_graphics.py --app 'outputs/macos/Kajron Atomic Studio.app' --output qa/mac-graphics
+```
+
+Open its generated QA app, wait for `report.json`, quit it, then reopen it for
+`restart.json`. It uses a separate bundle ID and font/image storage folders.
+Picker answers point at generated fixtures. Check the report's `pass` field and
+compare the exported PNG frames with its embedded expected preview images.
+Never distribute the QA app or its test profile.

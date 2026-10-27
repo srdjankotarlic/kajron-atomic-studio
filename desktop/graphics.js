@@ -205,8 +205,8 @@ const designKeys=['labelEnabled','label','labelUppercase','labelShape','fontSize
 let savedDesigns=[];
 function loadSavedDesigns(){try{const values=JSON.parse(localStorage.getItem('kajron-atomic-designs-v1'));if(Array.isArray(values))savedDesigns=values.slice(0,12).filter(a=>a&&typeof a.name==='string'&&a.settings).map(a=>({name:a.name.slice(0,80),settings:a.settings}));}catch{}}
 function refreshSavedDesigns(){
-  $('saved-designs').replaceChildren(new Option(window.KajronI18n.translate('Moji izgledi…'),''));
-  savedDesigns.forEach((a,i)=>$('saved-designs').add(new Option(a.name,String(i))));
+  $('saved-designs').replaceChildren(new Option('Moji izgledi…',''));
+  savedDesigns.forEach((a,i)=>{const option=new Option(a.name,String(i));option.dataset.userContent='';$('saved-designs').add(option);});
 }
 function windowGraphicAsset(id){const asset=graphicAssets.get(id);if(!asset)throw new Error('Nedostaje slika iz projekta. Uvezi je ponovo.');return asset;}
 function initDesignTools(){

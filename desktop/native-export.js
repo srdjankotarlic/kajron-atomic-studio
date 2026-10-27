@@ -67,7 +67,8 @@ $('export').addEventListener('click', async () => {
   $('saved-path').hidden = true;
   progress(1, 'Priprema kajrona…');
   try {
-    await graphicsReady; await graphicsQueue;
+    await graphicsReady; await graphicsQueue; await readyTextFont(s);
+    Object.assign(g,calc(s));
     const rendered = await renderLayers(s, g);
     const layers = {};
     for (const key of ['base', 'track', 'fg', 'mask']) layers[key] = await encodeBase64(rendered[key]);

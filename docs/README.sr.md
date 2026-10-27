@@ -57,6 +57,34 @@ Veličina fajla zavisi od trajanja, rezolucije i broja frejmova. Kompresija ne s
 tekst. Ako veoma dugačak tekst sa velikim slovima pređe širinu slike od 32760 px,
 smanji slova ili skrati tekst prema obaveštenju u aplikaciji.
 
+## Klijentove grafike, slike i gotovi izgledi
+
+U delu **Tvoje grafike i slike** klikni **Uvezi grafiku trake** za pozadinu ili
+**Dodaj logo ili sliku** za poseban element. Podržani su statični **PNG, JPG/JPEG,
+WebP i SVG** fajlovi, uključujući providne slike. Široka grafika prilagodi visinu
+trake; viša grafika počinje preko celog kadra.
+
+Izaberi sloj i prevuci ga u pregledu ili unesi položaj, širinu, visinu i
+neprozirnost. Sloj može biti ispod ili preko teksta, sa koordinatama unutar trake
+ili celog kadra. Za grafike izvan trake izaberi izvoz **Ceo kadar**. Kroz
+**Položaj teksta na grafici** odredi gde tekst prolazi, nezavisno od slike.
+
+Dostupno je **15 izgleda**: Samo tekst, Studio, Uživo, Vesti, Najnovije, Sport,
+Biznis, Zaobljeni, Staklo, Okvir, Preliv, Dijagonala, Dvostruka linija, Neon i
+Minimal. Boje, oblik trake i oblik oznake menjaš u panelu **Izgled**. Tekst oznake
+(„Uživo”, „LIVE” ili bilo koji drugi) i velika/mala slova možeš sam da odrediš.
+**Sačuvaj moj izgled** čuva do 12 ličnih izgleda bez promene sadržaja kajrona.
+
+Istaknuto dugme **Samo tekst · bez grafike** sakriva sve slike i pozadine, uz
+potpunu providnost. Postavke slika ostaju sačuvane za povratak u grafički režim.
+
+Ulazni fajl može imati do 20 MB. SVG mora biti samostalan; uvozi se kao lokalni
+PNG i ne učitava spoljne fajlove. Slike se prilagođavaju na najviše 4096 px po
+strani i 8 MB. Biblioteka podržava 64 slike / 64 MB, a projekat do 12 slojeva.
+Sačuvan JSON projekat **sadrži korišćene slike**, pa ga prenosiš na drugi računar
+sa verzijom 2.0 ili novijom. Ograničenje projekta je 64 MB. Originalne klijentove
+fajlove aplikacija ne menja. Stariji projekti ostaju podržani.
+
 ## Dodavanje fontova
 
 Klikni **Tekst → Dodaj fontove…** i izaberi TTF, OTF, WOFF ili WOFF2. Font se

@@ -47,7 +47,11 @@ to run the app.
 
 - Scrolling left/right or a static ticker, with a live preview and complete text cycles.
 - Font size, bold and uppercase, text/bar/accent colors, opacity and corner radius.
-- Optional fixed label, ticker height, frame position and margins.
+- **15 editable designs**, from LIVE and breaking news to sports, glass, gradients and text only.
+- Import client **PNG, JPG, WebP and self-contained SVG** artwork, logos and images.
+- Up to 12 image layers: drag, resize, position, change opacity, fit/crop and stacking order.
+- Save up to 12 personal designs; projects embed their images for use on another computer.
+- Optional fixed label with editable wording, letter case, color and shape. Ticker height, frame position and margins.
 - **Text only** mode: letters over a fully transparent background, without the bar or label.
 - Import **TTF, OTF, WOFF and WOFF2** fonts into the app's private font library.
 - WebM VP9, MOV PNG or ProRes 4444, and MP4 H.264 output.
@@ -76,6 +80,33 @@ Compression keeps the whole text cycle. A very long line at a large font size ma
 exceed the 32760-pixel text texture limit; reduce the font size or shorten the text
 if prompted.
 
+## Client artwork and your own designs
+
+Under **Your graphics and images**, choose **Import ticker artwork** for a client’s
+background or **Add logo or image** for a separate element. A wide background
+adjusts the strip height; a taller image starts in full-frame mode. Imported SVGs
+are rasterized once into local PNG images, including their transparency.
+
+Select a layer, then drag it in the preview or edit its X/Y, width/height and
+opacity. Choose coordinates relative to the **ticker strip** or the **full frame**,
+place the image behind/above the text, and choose fit, crop or stretch. For images
+outside the strip, export **Full frame**. **Text position on artwork** sets the
+text area independently of the images.
+
+The 15 designs include text only, Studio, Live, News, Breaking, Sports, Business,
+Rounded, Glass, Outline, Gradient, Diagonal, Double stripe, Neon and Minimal.
+Edit colors and shapes under **Style**, and edit the leading label in **Text**.
+Use **Save my design** to reuse your layout without replacing the ticker text.
+The prominent **Text only · no graphics** switch hides every artwork layer while
+keeping its settings, and exports only letters over transparent pixels.
+
+Image inputs: static PNG, JPG/JPEG, WebP and self-contained SVG, up to 20 MB per
+source. SVG cannot load external files or run scripts. Images are normalized to
+PNG, up to 4096 px per side and 8 MB each. The local library holds 64 images / 64 MB.
+A project has up to 12 layers and embeds the referenced images (up to 64 MB per
+JSON project). Original client files are never modified. Older app versions can
+read legacy projects but cannot reproduce these new image/design features.
+
 ## Use it in OBS Studio
 
 1. Open **Sources → + → Media Source**.
@@ -98,7 +129,8 @@ the rendered letters and do not require the font on the OBS playback computer.
 
 Save/open projects with **Ctrl+S / Ctrl+O** on Windows or **⌘S / ⌘O** on macOS.
 Projects are compatible across platforms, including older Kajron Studio projects.
-Projects do not embed font files. No user fonts or projects are shipped in releases.
+Projects embed their used graphics, but do not embed font files. No user graphics,
+fonts or projects are shipped in releases.
 
 ## Source, build and verification
 

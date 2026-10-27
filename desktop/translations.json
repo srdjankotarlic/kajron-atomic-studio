@@ -303,5 +303,6 @@
   "Nedostaje slika iz projekta. Uvezi je ponovo.": "A project image is missing. Import it again.",
   "Najviše 12 sačuvanih izgleda.": "Maximum 12 saved designs.",
   "Izgled je sačuvan.": "Design saved.",
-  "Čuvanje izgleda nije uspelo.": "The design could not be saved."
+  "Čuvanje izgleda nije uspelo.": "The design could not be saved.",
+  "Slike možeš da prevlačiš direktno u pregledu.": "Drag images directly in the preview."
 }

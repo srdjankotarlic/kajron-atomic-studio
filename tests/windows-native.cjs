@@ -115,7 +115,7 @@ app.whenReady().then(async()=>{
   const logoData=await evaluate("(()=>{const c=makeCanvas(80,80),x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(5,5,70,70);return c.toDataURL('image/png').split(',')[1]})()");
   await fs.writeFile(logo,Buffer.from(logoData,'base64'));await fs.writeFile(broken,'not an image');
   await check('native mixed image import, SVG rasterization and movable frame/strip layers',async()=>{
-    await evaluate("state=sanitize({...state,text:'Client ČĆŽŠĐ',resolution:'custom',customWidth:640,customHeight:360,margin:0,position:'bottom',fontSize:32,motion:'static',format:'mov',quality:'compact',transparent:true,staticDuration:5,graphics:[]});updateUI(true)");
+    await evaluate("state=sanitize({...state,text:'Client ČĆŽŠĐ',bold:true,resolution:'custom',customWidth:640,customHeight:360,margin:0,position:'bottom',fontSize:32,motion:'static',format:'mov',quality:'compact',transparent:true,staticDuration:5,graphics:[]});updateUI(true)");
     nextOpen=[artwork,logo,broken];await evaluate("$('add-background').click()");
     await until(async()=>await evaluate('state.graphics.length')===2,'mixed image import');
     await evaluate('graphicsQueue');
@@ -130,11 +130,20 @@ app.whenReady().then(async()=>{
     await fs.writeFile(path.join(output,'graphics-interface.png'),(await win.webContents.capturePage()).toPNG());
   });
   await check('graphics survive export outside the ticker strip and match the Canvas preview',async()=>{
-    const expected=await evaluate("paintPreview(0);preview.toDataURL('image/png').split(',')[1]");
+    const expected=await evaluate("(async()=>{await readyTextFont(state);updateUI();paintPreview(0);return preview.toDataURL('image/png').split(',')[1]})()");
     await fs.writeFile(path.join(output,'graphics-expected.png'),Buffer.from(expected,'base64'));
     const target=path.join(output,'graphics.mov');nextSave=target;await evaluate("$('export').click()");
     await until(()=>fs.access(target).then(()=>true,()=>false),'graphics MOV',30000);
     await until(async()=>!(await evaluate('exporting')),'graphics export finished');
+  });
+  await check('editable custom label with imported bold font matches exported pixels',async()=>{
+    await evaluate("state=sanitize({...state,labelEnabled:true,label:'My Live',labelUppercase:false,labelShape:'pill',labelColor:'#ffffff',accentColor:'#b92744'});updateUI(true)");
+    const expected=await evaluate("(async()=>{await readyTextFont(state);updateUI();paintPreview(0);return preview.toDataURL('image/png').split(',')[1]})()");
+    await fs.writeFile(path.join(output,'label-expected.png'),Buffer.from(expected,'base64'));
+    const target=path.join(output,'custom-label.mov');nextSave=target;await evaluate("$('export').click()");
+    await until(()=>fs.access(target).then(()=>true,()=>false),'custom label MOV',30000);
+    await until(async()=>!(await evaluate('exporting')),'custom label finished');
+    await evaluate("state=sanitize({...state,labelEnabled:false});updateUI(true)");
   });
   await check('portable project embeds artwork and restores it into a clean graphics library',async()=>{
     const project=path.join(output,'project-with-artwork.json');nextSave=project;await evaluate("$('save-project').click()");

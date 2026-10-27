@@ -50,6 +50,17 @@ let geometry;
 function textOf(s) { const text = s.text.trim().split(/\r?\n/).map(t => t.trim()).filter(Boolean).join('   •   '); return s.uppercase ? text.toLocaleUpperCase('sr-Latn') : text; }
 function labelOf(s) { return s.labelUppercase ? s.label.toLocaleUpperCase('sr-Latn') : s.label; }
 function textFont(s) { return `${s.bold ? 700 : 400} ${s.fontSize}px "${s.font}"`; }
+const fontReadiness = new Map(), fontPreviewRequested = new Set(), textTrackCache = new Map(), labelCanvasCache = new Map();
+function fontKey(s) { return textFont(s) + '|' + Math.min(s.fontSize*.72,s.barHeight*.46); }
+function readyTextFont(s) {
+  const key=fontKey(s);
+  if(!fontReadiness.has(key))fontReadiness.set(key,Promise.all([document.fonts.load(textFont(s)),document.fonts.load(`700 ${Math.min(s.fontSize*.72,s.barHeight*.46)}px "${s.font}"`)]));
+  return fontReadiness.get(key);
+}
+function refreshWhenFontReady(s) {
+  const key=fontKey(s);if(fontPreviewRequested.has(key))return;fontPreviewRequested.add(key);
+  readyTextFont(s).then(()=>{textTrackCache.clear();labelCanvasCache.clear();if(fontKey(state)===key)updateUI();}).catch(()=>toast('Neki fontovi nisu učitani. Probaj drugi TTF ili OTF fajl.'));
+}
 function calc(s) {
   let [width, height] = s.resolution === 'custom' ? [s.customWidth, s.customHeight] : s.resolution.split('x').map(Number);
   const barHeight = Math.min(s.barHeight, height), barY = s.position === 'top' ? Math.min(s.margin, height - barHeight) : s.position === 'center' ? Math.floor((height - barHeight) / 2) : Math.max(0, height - barHeight - s.margin);
@@ -83,8 +94,10 @@ function paintBase(c, s, g, strip = false, opaque = false) {
   c.restore();
   paintGraphics(c,s,g,'behind',strip);
 }
-function paintForeground(c, s, g, strip = false) {
-  const y = strip ? 0 : g.barY;
+function makeLabelCanvas(s,g) {
+  const key=JSON.stringify([s.font,s.fontSize,s.label,s.labelUppercase,s.labelShape,s.accentColor,s.labelColor,s.radius,g.width,g.barHeight,g.labelSize,g.labelWidth]);
+  if(labelCanvasCache.has(key))return labelCanvasCache.get(key);
+  const canvas=makeCanvas(g.width,g.barHeight),c=canvas.getContext('2d'),y=0;
   if(g.labelWidth){
     c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip();
     const inset=['pill','outline'].includes(s.labelShape)?8:0;
@@ -94,21 +107,38 @@ function paintForeground(c, s, g, strip = false) {
     else{roundedPath(c,inset,y+inset,g.labelWidth-inset*2,g.barHeight-inset*2,s.labelShape==='pill'?g.barHeight/2:0);c.fill();}
     const dot=s.labelShape==='dot'?g.labelSize*.65:0;
     if(dot){c.fillStyle=s.labelColor;c.beginPath();c.arc(18+dot/2,y+g.barHeight/2,dot/2,0,Math.PI*2);c.fill();}
-    c.fillStyle = s.labelShape==='outline'?s.accentColor:s.labelColor; c.font = `700 ${g.labelSize}px "${s.font}"`; c.textBaseline = 'middle'; c.textAlign = 'center';
+    c.fillStyle = s.labelColor; c.font = `700 ${g.labelSize}px "${s.font}"`; c.textBaseline = 'middle'; c.textAlign = 'center';
     c.fillText(labelOf(s), (g.labelWidth+dot)/2, y+g.barHeight/2+g.labelSize*.04, Math.max(2,g.labelWidth-24-dot)); c.restore();
   }
+  if(labelCanvasCache.size>=8)labelCanvasCache.delete(labelCanvasCache.keys().next().value);
+  labelCanvasCache.set(key,canvas);return canvas;
+}
+function paintForeground(c,s,g,strip=false){
+  if(!s.textOnly&&g.labelWidth)c.drawImage(makeLabelCanvas(s,g),0,strip?0:g.barY);
   paintGraphics(c,s,g,'above',strip);
+}
+function makeTextTrack(s,g) {
+  const trackWidth=s.motion==='static'?g.contentWidth:Math.ceil(g.period+g.contentWidth+32);
+  if(trackWidth>32760)throw new Error('Tekst je predugačak za ovu veličinu slova. Skrati tekst ili smanji slova, pa ponovi izvoz.');
+  const key=JSON.stringify([textFont(s),s.textColor,g.text,g.period,g.contentWidth,g.contentHeight,s.motion==='static']);
+  if(textTrackCache.has(key))return textTrackCache.get(key);
+  const track=makeCanvas(Math.max(2,trackWidth),g.contentHeight),tc=track.getContext('2d');
+  tc.font=textFont(s);tc.fillStyle=s.textColor;tc.textBaseline='middle';
+  if(s.motion==='static')tc.fillText(g.text,30,g.contentHeight/2+s.fontSize*.04);
+  else for(let x=30;x<track.width;x+=g.period)tc.fillText(g.text,x,g.contentHeight/2+s.fontSize*.04);
+  if(textTrackCache.size>=4)textTrackCache.delete(textTrackCache.keys().next().value);
+  textTrackCache.set(key,track);return track;
 }
 function paintText(c, s, g, time, strip = false) {
   if (!g.text) return;
-  const y = strip ? 0 : g.barY;
-  let offset = (time % g.duration) / g.duration * g.period;
-  if (s.motion === 'right') offset = (g.period - offset) % g.period;
-  if (s.motion === 'static') offset = 0;
-  c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip(); c.beginPath(); c.rect(g.contentX, y + g.contentY, g.contentWidth, g.contentHeight); c.clip();
-  c.font = textFont(s); c.fillStyle = s.textColor; c.textBaseline = 'middle'; c.textAlign = 'left';
-  if (s.motion === 'static') c.fillText(g.text, g.contentX + 30, y + g.contentY + g.contentHeight / 2 + s.fontSize * .04);
-  else for (let x = g.contentX + 30 - offset; x < g.width; x += g.period) c.fillText(g.text, x, y + g.contentY + g.contentHeight / 2 + s.fontSize * .04);
+  const y = (strip ? 0 : g.barY) + g.contentY;
+  const frame=Math.floor((time%g.duration)*s.fps),offset=frame*g.period/g.frames;
+  const x=s.motion==='static'?0:Math.floor(s.motion==='right'?(g.period-offset)%g.period:offset);
+  c.save();roundedPath(c,0,strip?0:g.barY,g.width,g.barHeight,s.radius);c.clip();
+  c.beginPath();c.rect(g.contentX,y,g.contentWidth,g.contentHeight);c.clip();
+  if(Math.ceil(g.period+g.contentWidth+32)>32760){
+    c.font=textFont(s);c.fillStyle=s.textColor;c.textBaseline='middle';c.fillText(g.text,g.contentX+30-x,y+g.contentHeight/2+s.fontSize*.04);
+  }else c.drawImage(makeTextTrack(s,g),x,0,g.contentWidth,g.contentHeight,g.contentX,y,g.contentWidth,g.contentHeight);
   c.restore();
 }
 function paintPreview(time) { ctx.clearRect(0, 0, geometry.width, geometry.height); paintBase(ctx, state, geometry); paintText(ctx, state, geometry, time); paintForeground(ctx, state, geometry); paintGraphicSelection(ctx,state,geometry); }
@@ -138,7 +168,7 @@ function updateUI(syncInputs = false) {
   $('play').textContent = playing ? 'Ⅱ' : '▶'; $('play').setAttribute('aria-label', playing ? 'Pauziraj pregled' : 'Pokreni pregled');
   document.querySelectorAll('[data-preset]').forEach(b => { b.classList.toggle('selected', b.dataset.preset === state.preset); b.setAttribute('aria-pressed', String(b.dataset.preset === state.preset)); });
   playTime %= geometry.duration; paintPreview(playTime);
-  updateGraphicTools();
+  updateGraphicTools();refreshWhenFontReady(state);
 }
 for (const [key, id] of Object.entries(bindings)) {
   const el = $(id);
@@ -178,9 +208,10 @@ for (const id of ['guide-close', 'guide-done']) $(id).addEventListener('click', 
 $('guide').addEventListener('click', e => { if (e.target === $('guide')) { const r = e.target.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.target.close(); } });
 $('studio-nav').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 $('reset').addEventListener('click', () => { state = { ...defaults }; playTime = 0; updateUI(true); persist(); toast('Vraćena su početna podešavanja.'); });
-function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; if (!c.getContext('2d')) throw new Error('Pregledač ne može da napravi sliku ove veličine.'); return c; }
+function makeCanvas(w, h) { const c = document.createElement('canvas'); c.style.fontSynthesis = 'weight style'; c.width = w; c.height = h; if (!c.getContext('2d')) throw new Error('Pregledač ne može da napravi sliku ove veličine.'); return c; }
 async function pngBytes(c) { const blob = await new Promise(resolve => c.toBlob(resolve, 'image/png')); if (!blob) throw new Error('Tekst je predugačak za ovu veličinu slova. Skrati tekst ili smanji slova.'); return new Uint8Array(await blob.arrayBuffer()); }
 async function renderLayers(s, g) {
+  await readyTextFont(s);
   if(!s.textOnly)await ensureGraphicImages(s.graphics);
   const strip = s.scope === 'strip', h = strip ? g.barHeight : g.height;
   const base = makeCanvas(g.width, h), fg = makeCanvas(g.width, h);
@@ -189,12 +220,7 @@ async function renderLayers(s, g) {
   // A transparent mask gives preview and exports the same rounded clipping.
   const mask = makeCanvas(g.width, h), mc = mask.getContext('2d');
   roundedPath(mc, 0, strip ? 0 : g.barY, g.width, g.barHeight, s.radius); mc.fillStyle = '#ffffff'; mc.fill();
-  const trackWidth = s.motion === 'static' ? g.contentWidth : Math.ceil(g.period + g.contentWidth + 32);
-  if (trackWidth > 32760) throw new Error('Tekst je predugačak za ovu veličinu slova. Skrati tekst ili smanji slova, pa ponovi izvoz.');
-  const track = makeCanvas(Math.max(2, trackWidth), g.contentHeight), tc = track.getContext('2d');
-  tc.font = textFont(s); tc.fillStyle = s.textColor; tc.textBaseline = 'middle';
-  if (s.motion === 'static') tc.fillText(g.text, 30, g.contentHeight / 2 + s.fontSize * .04);
-  else for (let x = 30; x < track.width; x += g.period) tc.fillText(g.text, x, g.contentHeight / 2 + s.fontSize * .04);
+  const track = makeTextTrack(s,g);
   return { base: await pngBytes(base), track: await pngBytes(track), fg: await pngBytes(fg), mask: await pngBytes(mask), h };
 }
 function buildCommand(s, g) {
