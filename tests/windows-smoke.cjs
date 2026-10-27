@@ -21,6 +21,7 @@ async function finish(error) {
 }
 app.setPath('userData', path.join(os.tmpdir(), 'kajron-smoke-' + process.pid));
 ipcMain.on('kajron-message', async (_event, message) => {
+  if (message.action === 'loadGraphics') window.webContents.send('kajron-event', { type: 'graphicsLoaded', assets: [] });
   if (message.action === 'loadFonts') window.webContents.send('kajron-event', { type: 'fontsLoaded', fonts: [] });
   if (message.action !== 'export') return;
   try {
