@@ -1,4 +1,43 @@
-# Validation — 1.5.2
+# Validation — 2.0.0
+
+## Native graphics and video checks
+
+- All 12 automated regression tests pass, including immediate saves, font races,
+  language preservation, image deduplication and mismatched image-ID rejection.
+- Mac native integration passes with a separate profile and automated picker
+  answers: TTF import, 15 designs, PNG/JPG/WebP/SVG imports with a broken PNG,
+  portable project save/open with embedded artwork, saved user designs, graphics
+  outside the ticker strip, and image/text-only MOV exports.
+- Mac decoded MOV frames match the actual preview within one color level with
+  a custom bold font and graphics; text-only output matches exactly. Empty
+  regions are transparent. The same text/label bitmap drawing is used in preview
+  and export to avoid platform font-synthesis differences.
+- Restarting the Mac QA app restores its text, imported font, both placed graphics
+  and saved designs. The test profile is separate from the installed user's app.
+- All 64000 RGBA pixels match exactly in four MOV PNG alpha/quality combinations.
+- Passed: [final native Windows run](https://github.com/srdjankotarlic/kajron-atomic-studio/actions/runs/40556535189).
+
+The Windows suite runs the shipped main process, trusted IPC, sandboxed renderer,
+font/image storage and encoder. It checks the 15 designs, mixed image import,
+actual pointer dragging, layers outside the strip, custom labels and imported
+bold fonts, image-embedded projects restored into an empty graphics library,
+saved design persistence and text-only output with hidden retained images.
+Separate Pillow checks decode PNG frames inside MOV files and compare them with
+the actual preview, including alpha. Native picker answers are automated.
+
+The existing six-format export, cancellation, overwrite, invalid-input and minimum
+window checks also run. The installer is installed, reinstalled and uninstalled
+while an unrelated user file is retained. Archive integrity and uploaded asset
+SHA-256 digests are checked before publication. No client images, imported fonts,
+user preferences or projects are bundled in the release.
+
+These checks cover the supported workflows and fixtures, not every possible font,
+SVG, codec consumer, GPU or display configuration. Supported platforms and signing
+limits remain Windows 10/11 x64 and Apple Silicon Mac/macOS 13+; Windows is unsigned,
+and the Mac app is ad-hoc signed rather than notarized. Static image import and
+size limits are documented in the README.
+
+## Previous verification — 1.5.2
 
 This release only removes the introductory banner from the shared HTML and updates
 package version metadata. The editor and preview are the first content in `main`
