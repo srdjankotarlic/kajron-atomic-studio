@@ -106,10 +106,87 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
         case "reveal": revealVideo()
         case "saveProject": saveProjectFile(body)
         case "loadProject": openProject()
+        case "loadGraphics": send(["type": "graphicsLoaded", "assets": readGraphics()])
+        case "importGraphics": importGraphics(body)
+        case "storeGraphics":
+            do { send(["type": "graphicsStored", "requestId": body["requestId"] as? String ?? "", "assets": try storeGraphics(body["assets"])]) }
+            catch { send(["type": "graphicsStored", "requestId": body["requestId"] as? String ?? "", "error": self.L(error.localizedDescription)]) }
         case "loadFonts": send(["type": "fontsLoaded", "fonts": readFonts()])
         case "importFonts": importFonts()
         case "fullscreen": window.toggleFullScreen(nil)
         default: break
+        }
+    }
+
+
+    func graphicsFolder() -> URL {
+        fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Kajron Atomic Studio/Graphics", isDirectory: true)
+    }
+    func readGraphics() -> [[String: String]] {
+        let folder = graphicsFolder()
+        let files = ((try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []).filter { $0.pathExtension == "json" }.prefix(64)
+        var total = 0
+        return files.compactMap { url in
+            guard let metadata = try? Data(contentsOf: url),
+                  let item = try? JSONSerialization.jsonObject(with: metadata) as? [String: String],
+                  let id = item["id"], id.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil,
+                  url.deletingPathExtension().lastPathComponent == id, let name = item["name"] else { return nil }
+            let file = folder.appendingPathComponent(id + ".png")
+            guard let attrs = try? fm.attributesOfItem(atPath: file.path), (attrs[.size] as? Int ?? 0) <= 8_000_000,
+                  let data = try? Data(contentsOf: file), data.starts(with: [137,80,78,71,13,10,26,10]) else { return nil }
+            total += data.count
+            guard total <= 64_000_000 else { return nil }
+            return ["id": id, "name": String(name.prefix(160)), "data": data.base64EncodedString()]
+        }
+    }
+    func storeGraphics(_ value: Any?) throws -> [[String: String]] {
+        guard let assets = value as? [[String: String]], assets.count <= 12 else { throw StudioError("Najviše 12 slika po projektu.") }
+        let library = readGraphics()
+        var known = Set(library.compactMap { $0["id"] })
+        var total = library.reduce(0) { $0 + (Data(base64Encoded: $1["data"] ?? "")?.count ?? 0) }
+        var prepared: [(String,String,Data)] = []
+        for asset in assets {
+            guard let encoded = asset["data"], encoded.count <= 11_000_000,
+                  let bytes = Data(base64Encoded: encoded), bytes.count <= 8_000_000,
+                  bytes.starts(with: [137,80,78,71,13,10,26,10]) else { throw StudioError("Slika nije ispravna.") }
+            let id = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+            if let supplied = asset["id"], supplied != id { throw StudioError("Slika nije ispravna.") }
+            if !known.contains(id) {
+                total += bytes.count
+                known.insert(id)
+                guard known.count <= 64, total <= 64_000_000 else { throw StudioError("Biblioteka grafika je puna (64 slike / 64 MB).") }
+            }
+            prepared.append((id, String((asset["name"] ?? "Graphic").prefix(160)), bytes))
+        }
+        let folder = graphicsFolder()
+        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        for (id, name, bytes) in prepared {
+            try bytes.write(to: folder.appendingPathComponent(id + ".png"), options: .atomic)
+            try JSONSerialization.data(withJSONObject: ["id":id,"name":name]).write(to: folder.appendingPathComponent(id + ".json"), options: .atomic)
+        }
+        return prepared.map { ["id":$0.0,"name":$0.1,"data":$0.2.base64EncodedString()] }
+    }
+    func importGraphics(_ body: [String: Any]) {
+        let panel = NSOpenPanel()
+        panel.title = self.L("Dodaj grafike i slike")
+        panel.allowedContentTypes = ["png","jpg","jpeg","webp","svg"].compactMap { UTType(filenameExtension:$0) }
+        panel.allowsMultipleSelection = true
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK else { return }
+            var images: [[String: String]] = []
+            var warnings: [String] = []
+            let types = ["png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp","svg":"image/svg+xml"]
+            for url in panel.urls.prefix(12) {
+                do {
+                    guard let mime = types[url.pathExtension.lowercased()] else { throw StudioError(self.L("Izaberi PNG, JPG, WebP ili SVG.")) }
+                    let attrs = try self.fm.attributesOfItem(atPath: url.path)
+                    guard (attrs[.size] as? Int ?? 0) <= 20_000_000 else { throw StudioError(self.L("Ulazna slika je prevelika (najviše 20 MB).")) }
+                    let data = try Data(contentsOf:url)
+                    images.append(["name":url.lastPathComponent,"mime":mime,"data":data.base64EncodedString()])
+                } catch { warnings.append(url.lastPathComponent + ": " + error.localizedDescription) }
+            }
+            if panel.urls.count > 12 { warnings.append(self.L("Najviše 12 slika po projektu.")) }
+            self.send(["type":"graphicsImported","images":images,"kind":body["kind"] as? String == "background" ? "background" : "image","warning":warnings.prefix(3).joined(separator:" · ")])
         }
     }
 
@@ -187,7 +264,7 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
             guard response == .OK, let url = panel.url else { return }
             do {
                 let attrs = try self.fm.attributesOfItem(atPath: url.path)
-                guard (attrs[.size] as? Int ?? 0) <= 50000 else { throw StudioError(self.L("Projekat je prevelik.")) }
+                guard (attrs[.size] as? Int ?? 0) <= 64_000_000 else { throw StudioError(self.L("Projekat je prevelik.")) }
                 let data = try Data(contentsOf: url)
                 let object = try JSONSerialization.jsonObject(with: data)
                 self.send(["type": "projectLoaded", "project": object])
@@ -195,7 +272,7 @@ final class Studio: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKN
         }
     }
     func saveProjectFile(_ body: [String: Any]) {
-        guard let contents = body["contents"] as? String, contents.utf8.count < 50000 else { return }
+        guard let contents = body["contents"] as? String, contents.utf8.count <= 64_000_000 else { return }
         let panel = NSSavePanel()
         panel.title = self.L("Sačuvaj projekat")
         panel.allowedContentTypes = [.json]

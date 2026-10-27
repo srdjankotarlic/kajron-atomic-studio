@@ -95,6 +95,80 @@ app.whenReady().then(async()=>{
     await until(async()=>!win.webContents.isLoading()&&await evaluate('fontLibraryLoaded&&state.font')===customFont,'restored custom font');
     assert.equal(await evaluate('window.KajronI18n.language'),'en');
   });
+  await evaluate('graphicsReady');
+  await check('15 editable designs, text-only shortcut and safe standalone SVG',async()=>{
+    assert.equal(await evaluate("document.querySelectorAll('[data-preset]').length"),15);
+    const text=await evaluate('state.text');
+    for(const id of await evaluate('STUDIO_DESIGNS.map(a=>a.id)')){
+      await evaluate(`applyDesign(${JSON.stringify(id)})`);
+      assert.equal(await evaluate('state.text'),text);
+      assert.equal(await evaluate('state.preset'),id);
+      assert.ok(await evaluate('geometry.contentWidth>0&&geometry.contentHeight>0'));
+    }
+    await evaluate("applyDesign('live');state.label='My Live';state.labelUppercase=false;updateUI(true)");
+    assert.equal(await evaluate('labelOf(state)'),'My Live');
+    const rejected=await evaluate(`normalizeGraphic({name:'external.svg',mime:'image/svg+xml',data:btoa('<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.com/private.png"/></svg>')}).then(()=>false,()=>true)`);
+    assert.equal(rejected,true);
+  });
+  const artwork=path.join(output,'client-artwork.svg'),logo=path.join(output,'client-logo.png'),broken=path.join(output,'broken-image.png');
+  await fs.writeFile(artwork,`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="100"><defs><linearGradient id="g"><stop stop-color="#1347aa"/><stop offset="1" stop-color="#246dd9"/></linearGradient></defs><rect width="640" height="100" fill="url('#g')"/></svg>`);
+  const logoData=await evaluate("(()=>{const c=makeCanvas(80,80),x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(5,5,70,70);return c.toDataURL('image/png').split(',')[1]})()");
+  await fs.writeFile(logo,Buffer.from(logoData,'base64'));await fs.writeFile(broken,'not an image');
+  await check('native mixed image import, SVG rasterization and movable frame/strip layers',async()=>{
+    await evaluate("state=sanitize({...state,text:'Client ČĆŽŠĐ',resolution:'custom',customWidth:640,customHeight:360,margin:0,position:'bottom',fontSize:32,motion:'static',format:'mov',quality:'compact',transparent:true,staticDuration:5,graphics:[]});updateUI(true)");
+    nextOpen=[artwork,logo,broken];await evaluate("$('add-background').click()");
+    await until(async()=>await evaluate('state.graphics.length')===2,'mixed image import');
+    await evaluate('graphicsQueue');
+    assert.equal(await evaluate('state.textOnly'),false);
+    assert.match(await evaluate("$('toast').textContent"),/broken-image.png/);
+    assert.equal((await fs.readdir(path.join(profile,'graphics'))).filter(n=>n.endsWith('.png')).length,2);
+    await evaluate("selectedGraphic=state.graphics[1].id;updateGraphicTools(true);$('graphic-anchor').value='frame';$('graphic-anchor').dispatchEvent(new Event('input',{bubbles:true}));$('graphic-x').value='80';$('graphic-x').dispatchEvent(new Event('input',{bubbles:true}));$('graphic-y').value='5';$('graphic-y').dispatchEvent(new Event('input',{bubbles:true}));$('graphic-height').value='15';$('graphic-height').dispatchEvent(new Event('input',{bubbles:true}));state=sanitize({...state,textX:22,textY:15,textWidth:70,textHeight:70});playing=false;updateUI(true)");
+    assert.equal(await evaluate('state.scope'),'frame');
+    const p=await evaluate('Array.from(ctx.getImageData(550,40,1,1).data)');
+    assert.deepEqual(p,[255,0,0,255]);
+    await evaluate("$('graphics-heading').scrollIntoView({block:'start'})");
+    await fs.writeFile(path.join(output,'graphics-interface.png'),(await win.webContents.capturePage()).toPNG());
+  });
+  await check('graphics survive export outside the ticker strip and match the Canvas preview',async()=>{
+    const expected=await evaluate("paintPreview(0);preview.toDataURL('image/png').split(',')[1]");
+    await fs.writeFile(path.join(output,'graphics-expected.png'),Buffer.from(expected,'base64'));
+    const target=path.join(output,'graphics.mov');nextSave=target;await evaluate("$('export').click()");
+    await until(()=>fs.access(target).then(()=>true,()=>false),'graphics MOV',30000);
+    await until(async()=>!(await evaluate('exporting')),'graphics export finished');
+  });
+  await check('portable project embeds artwork and restores it into a clean graphics library',async()=>{
+    const project=path.join(output,'project-with-artwork.json');nextSave=project;await evaluate("$('save-project').click()");
+    await until(()=>fs.access(project).then(()=>true,()=>false),'embedded project');
+    const data=JSON.parse(await fs.readFile(project,'utf8'));
+    assert.equal(data.version,2);assert.equal(data.graphicAssets.length,2);assert.equal(data.settings.graphics.length,2);
+    await fs.rm(path.join(profile,'graphics'),{recursive:true});
+    await evaluate("graphicAssets.clear();state=sanitize({...state,graphics:[],text:'temporary'});updateUI(true)");
+    nextOpen=[project];await evaluate("$('import-project').click()");
+    await until(async()=>await evaluate('state.graphics.length')===2,'portable artwork restore');
+    assert.equal(await evaluate('state.text'),'Client ČĆŽŠĐ');
+    assert.equal((await fs.readdir(path.join(profile,'graphics'))).filter(n=>n.endsWith('.png')).length,2);
+  });
+  await check('saved user design and artwork persist across restart without changing ticker text',async()=>{
+    await evaluate("$('design-name').value='Client Brand';$('save-design').click();persist()");
+    win.webContents.reload();await until(async()=>!win.webContents.isLoading()&&await evaluate('fontLibraryLoaded'),'artwork restart');
+    await evaluate('graphicsReady');
+    assert.equal(await evaluate('state.graphics.length'),2);
+    assert.equal(await evaluate('savedDesigns[0].name'),'Client Brand');
+    await evaluate("state.text='Keep this user text';applyDesign('news');$('saved-designs').value='0';$('saved-designs').dispatchEvent(new Event('change',{bubbles:true}))");
+    await until(async()=>await evaluate('state.graphics.length')===2,'saved design restore');
+    assert.equal(await evaluate('state.text'),'Keep this user text');
+  });
+  await check('text-only mode hides all retained images and exports fully transparent empty regions',async()=>{
+    await evaluate("$('text-only-primary').click();state=sanitize({...state,text:'Only text',font:'Arial',radius:0,textX:0,textY:0,textWidth:100,textHeight:100});playing=false;updateUI(true);paintPreview(0)");
+    assert.equal(await evaluate('state.graphics.length'),2);
+    assert.equal(await evaluate('state.textOnly'),true);
+    assert.deepEqual(await evaluate('Array.from(ctx.getImageData(550,40,1,1).data)'),[0,0,0,0]);
+    const expected=await evaluate("preview.toDataURL('image/png').split(',')[1]");await fs.writeFile(path.join(output,'text-only-expected.png'),Buffer.from(expected,'base64'));
+    const target=path.join(output,'graphics-text-only.mov');nextSave=target;await evaluate("$('export').click()");
+    await until(()=>fs.access(target).then(()=>true,()=>false),'text-only artwork MOV',30000);
+    await until(async()=>!(await evaluate('exporting')),'text-only artwork finished');
+    await evaluate("state=sanitize({...state,graphics:[],textX:0,textY:0,textWidth:100,textHeight:100});updateUI(true)");
+  });
   const cases=[
     {format:'webm',quality:'compact',transparent:true,textOnly:false,motion:'left',scope:'frame'},
     {format:'webm',quality:'compact',transparent:false,textOnly:false,motion:'right',scope:'strip'},

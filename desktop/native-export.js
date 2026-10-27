@@ -12,6 +12,7 @@ function finishNativeExport() {
   $('export-progress').hidden = true;
 }
 window.desktopEvent = (event) => {
+  if (graphicEvent(event)) return;
   if (event.type === 'fontsLoaded') { installFontChoices(event); return; }
   if (event.type === 'progress') progress(event.value, event.message);
   if (event.type === 'complete') {
@@ -28,16 +29,20 @@ window.desktopEvent = (event) => {
   if (event.type === 'failed') { finishNativeExport(); $('saved-path').textContent = event.message; $('saved-path').hidden = false; toast(event.message); }
   if (event.type === 'notice') toast(event.message);
   if (event.type === 'projectLoaded') {
-    fontsReady.then(() => fontInstallQueue).then(() => {
-    try {
+    graphicsQueue = graphicsQueue.then(async () => {
+      await Promise.all([fontsReady,graphicsReady]);await fontInstallQueue;
       const parsed = event.project;
-      if (!['Kajron Studio', 'Kajron Atomic Studio'].includes(parsed.app) || parsed.version !== 1 || typeof parsed.settings?.text !== 'string') throw new Error();
+      if (!['Kajron Studio', 'Kajron Atomic Studio'].includes(parsed.app) || ![1,2].includes(parsed.version) || typeof parsed.settings?.text !== 'string') throw new Error('Izaberi ispravan Kajron Atomic Studio JSON projekat.');
+      const next = sanitize(parsed.settings);
+      const assets=parsed.graphicAssets || [];
+      if(!Array.isArray(assets)||assets.length>12)throw new Error('Slika nije ispravna.');
+      if(assets.length){const stored=await storeGraphicAssets(assets);await registerGraphicAssets(stored);}
+      await ensureGraphicImages(next.graphics);
       noteFontChoice();
       const missingFont = /^AtomicFont_/.test(parsed.settings.font || '') && !enums.font.includes(parsed.settings.font);
-      state = sanitize(parsed.settings); playTime = 0; updateUI(true); persist(); refreshExportAction();
+      state = next; playTime = 0; updateUI(true); persist(); updateGraphicTools(true);refreshExportAction();
       toast(missingFont ? 'Projekat je učitan. Dodaj njegov TTF/OTF font na ovom računaru; privremeno je izabran Arial.' : 'Projekat je učitan.');
-    } catch { toast('Izaberi ispravan Kajron Atomic Studio JSON projekat.'); }
-    });
+    }).catch(error=>toast(error.message || 'Izaberi ispravan Kajron Atomic Studio JSON projekat.'));
   }
 };
 async function encodeBase64(bytes) {
@@ -62,6 +67,7 @@ $('export').addEventListener('click', async () => {
   $('saved-path').hidden = true;
   progress(1, 'Priprema kajrona…');
   try {
+    await graphicsReady; await graphicsQueue;
     const rendered = await renderLayers(s, g);
     const layers = {};
     for (const key of ['base', 'track', 'fg', 'mask']) layers[key] = await encodeBase64(rendered[key]);
@@ -72,7 +78,16 @@ $('export').addEventListener('click', async () => {
 });
 $('cancel-export').addEventListener('click', () => { cancelled = true; native({ action: 'cancel' }); });
 $('download-again').addEventListener('click', e => { e.preventDefault(); native({ action: 'reveal' }); });
-$('save-project').addEventListener('click', () => native({ action: 'saveProject', contents: JSON.stringify({ app: 'Kajron Atomic Studio', version: 1, settings: settingsForStorage(state) }, null, 2) }));
+$('save-project').addEventListener('click', async () => {
+  try {
+    await graphicsReady;await graphicsQueue;
+    const ids=[...new Set(state.graphics.map(a=>a.asset))];
+    const graphicAssets=ids.map(id=>{const a=windowGraphicAsset(id);return {id:a.id,name:a.name,data:a.data};});
+    const contents=JSON.stringify({app:'Kajron Atomic Studio',version:2,settings:settingsForStorage(state),graphicAssets},null,2);
+    if(new TextEncoder().encode(contents).length>64000000)throw new Error('Projekat je prevelik.');
+    native({action:'saveProject',contents});
+  }catch(error){toast(error.message);}
+});
 $('import-project').addEventListener('click', () => native({ action: 'loadProject' }));
 $('add-fonts').addEventListener('click', () => native({ action: 'importFonts' }));
 $('font').addEventListener('input', noteFontChoice);
@@ -95,5 +110,5 @@ for (const type of ['input', 'change']) $('format').addEventListener(type, () =>
 });
 document.addEventListener('input', () => { if (!exporting) refreshExportAction(); });
 $('reset').addEventListener('click', refreshExportAction);
-updateUI(true); refreshExportAction(); requestAnimationFrame(tick);
+initDesignTools();updateUI(true); refreshExportAction(); requestAnimationFrame(tick);
 native({ action: 'loadFonts' });

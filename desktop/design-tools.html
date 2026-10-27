@@ -1,0 +1,28 @@
+<section class="graphics-panel panel" aria-labelledby="graphics-heading">
+  <div class="graphics-heading"><h2 id="graphics-heading">Tvoje grafike i slike</h2><span>PNG · JPG · WebP · SVG</span></div>
+  <div class="graphics-actions"><button class="button subtle" id="add-background">＋ Uvezi grafiku trake</button><button class="button subtle" id="add-image">＋ Dodaj logo ili sliku</button></div>
+  <div class="graphics-library"><label for="graphic-library" class="sr-only">Sačuvane slike</label><select id="graphic-library" data-user-content><option value="">—</option></select><button class="button subtle" id="reuse-graphic">Dodaj iz biblioteke</button></div>
+  <p class="field-help" id="graphics-empty">Uvezi klijentovu grafiku, pa postavi tekst preko nje.</p>
+  <div class="graphic-layers" id="graphic-layers" aria-label="Grafički slojevi"></div>
+  <div id="graphic-controls" hidden>
+    <div class="graphic-toolbar"><label class="check-label"><input id="graphic-enabled" type="checkbox"> Prikaži sloj</label><button class="button subtle" id="remove-graphic">Ukloni sloj</button></div>
+    <div class="graphics-grid">
+      <div><label class="field-label" for="graphic-anchor">KOORDINATE</label><select id="graphic-anchor"><option value="strip">Unutar trake</option><option value="frame">Ceo kadar</option></select></div>
+      <div><label class="field-label" for="graphic-placement">SLOJ</label><select id="graphic-placement"><option value="behind">Ispod teksta</option><option value="above">Preko teksta</option></select></div>
+      <div><label class="field-label" for="graphic-fit">UKLAPANJE</label><select id="graphic-fit"><option value="contain">Cela slika</option><option value="cover">Popuni i iseci</option><option value="stretch">Razvuci</option></select></div>
+      <div><label class="field-label" for="graphic-opacity">NEPROZIRNOST (%)</label><input id="graphic-opacity" type="number" min="0" max="100" step="1"></div>
+      <div><label class="field-label" for="graphic-x">X (%)</label><input id="graphic-x" type="number" min="-100" max="100" step="0.5"></div>
+      <div><label class="field-label" for="graphic-y">Y (%)</label><input id="graphic-y" type="number" min="-100" max="100" step="0.5"></div>
+      <div><label class="field-label" for="graphic-width">ŠIRINA (%)</label><input id="graphic-width" type="number" min="1" max="200" step="0.5"></div>
+      <div><label class="field-label" for="graphic-height">VISINA (%)</label><input id="graphic-height" type="number" min="1" max="200" step="0.5"></div>
+    </div>
+    <div class="graphic-toolbar"><button class="button subtle" id="graphic-back">Pomeri nazad</button><button class="button subtle" id="graphic-front">Pomeri napred</button></div>
+  </div>
+  <p class="field-help" id="text-only-graphics-note" hidden>U režimu „Samo tekst” svi grafički slojevi su isključeni.</p>
+  <details class="text-area-controls"><summary>Položaj teksta na grafici</summary><div class="graphics-grid">
+    <div><label class="field-label" for="text-x">X TEKSTA (%)</label><input id="text-x" type="number" min="0" max="90" step="0.5" value="0"></div>
+    <div><label class="field-label" for="text-y">Y TEKSTA (%)</label><input id="text-y" type="number" min="0" max="80" step="0.5" value="0"></div>
+    <div><label class="field-label" for="text-width">ŠIRINA TEKSTA (%)</label><input id="text-width" type="number" min="10" max="100" step="0.5" value="100"></div>
+    <div><label class="field-label" for="text-height">VISINA TEKSTA (%)</label><input id="text-height" type="number" min="20" max="100" step="0.5" value="100"></div>
+  </div></details>
+</section>

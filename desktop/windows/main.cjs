@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pathToFileURL } = require('node:url');
 const { randomUUID, createHash } = require('node:crypto');
+const {readGraphics,storeGraphics} = require('./graphics.cjs');
 const { validateExport, renderExport } = require('./exporter.cjs');
 
 const translations = require('./translations.json');
@@ -44,7 +45,7 @@ async function exportVideo(message) {
   } finally { if (control === current) control = null; }
 }
 async function saveProject(message) {
-  if (typeof message.contents !== 'string' || Buffer.byteLength(message.contents) > 50000) return;
+  if (typeof message.contents !== 'string' || Buffer.byteLength(message.contents) > 64000000) return;
   const result = await dialog.showSaveDialog(win, { title: L('Sačuvaj projekat'), defaultPath: path.join(app.getPath('desktop'), 'kajron-projekat.json'), filters: [{ name: L('Kajron Atomic Studio projekat'), extensions: ['json'] }] });
   if (result.canceled || !result.filePath) return;
   const staging = `${result.filePath}.${randomUUID()}.tmp`;
@@ -57,7 +58,7 @@ async function saveProject(message) {
 async function loadProject() {
   const picked = await dialog.showOpenDialog(win, { title: L('Otvori projekat'), filters: [{ name: L('Kajron Atomic Studio projekat'), extensions: ['json'] }], properties: ['openFile'] });
   if (picked.canceled || !picked.filePaths[0]) return;
-  if ((await fs.stat(picked.filePaths[0])).size > 50000) throw new Error(L('Projekat je prevelik.'));
+  if ((await fs.stat(picked.filePaths[0])).size > 64000000) throw new Error(L('Projekat je prevelik.'));
   send({ type: 'projectLoaded', project: JSON.parse(await fs.readFile(picked.filePaths[0], 'utf8')) });
 }
 async function readFonts() {
@@ -111,6 +112,22 @@ async function importFonts() {
   }
   send({ type: 'fontsLoaded', fonts: library, selectedFamily, warning: warnings.slice(0,3).join(' · ') });
 }
+async function importGraphics(message) {
+  const picked=await dialog.showOpenDialog(win,{title:L('Dodaj grafike i slike'),filters:[{name:L('Grafike (PNG / JPG / WebP / SVG)'),extensions:['png','jpg','jpeg','webp','svg']}],properties:['openFile','multiSelections']});
+  if(picked.canceled)return;
+  const images=[],warnings=[];
+  for(const file of picked.filePaths.slice(0,12)){
+    try{
+      const ext=path.extname(file).slice(1).toLowerCase();
+      const types={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',svg:'image/svg+xml'};
+      if(!types[ext])throw new Error(L('Izaberi PNG, JPG, WebP ili SVG.'));
+      if((await fs.stat(file)).size>20000000)throw new Error(L('Ulazna slika je prevelika (najviše 20 MB).'));
+      images.push({name:path.basename(file),mime:types[ext],data:(await fs.readFile(file)).toString('base64')});
+    }catch(error){warnings.push(path.basename(file)+': '+error.message);}
+  }
+  if(picked.filePaths.length>12)warnings.push(L('Najviše 12 slika po projektu.'));
+  send({type:'graphicsImported',images,kind:message.kind==='background'?'background':'image',warning:warnings.slice(0,3).join(' · ')});
+}
 function createWindow() {
   win = new BrowserWindow({
     width: 1340, height: 1000, minWidth: 960, minHeight: 700, title: 'Kajron Atomic Studio',
@@ -156,6 +173,13 @@ ipcMain.on('kajron-message', (event, message) => {
       case 'reveal': if (completedPath) shell.showItemInFolder(completedPath); break;
       case 'saveProject': await saveProject(message); break;
       case 'loadProject': await loadProject(); break;
+      case 'loadGraphics': send({type:'graphicsLoaded',assets:await readGraphics(path.join(app.getPath('userData'),'graphics'))}); break;
+      case 'importGraphics': await importGraphics(message); break;
+      case 'storeGraphics': {
+        try { send({type:'graphicsStored',requestId:message.requestId,assets:await storeGraphics(path.join(app.getPath('userData'),'graphics'),message.assets)}); }
+        catch(error){send({type:'graphicsStored',requestId:message.requestId,error:L(error.message)});}
+        break;
+      }
       case 'loadFonts': send({type:'fontsLoaded',fonts:await readFonts()}); break;
       case 'importFonts': await importFonts(); break;
       case 'fullscreen': win.setFullScreen(!win.isFullScreen()); break;

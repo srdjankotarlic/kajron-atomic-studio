@@ -2,28 +2,29 @@
 const $ = (id) => document.getElementById(id);
 const defaults = {
   text: 'Dobrodošli u prenos uživo!\nSve najnovije informacije na jednom mestu.\nOstanite uz nas.',
-  labelEnabled: true, label: 'UŽIVO', font: 'Arial', fontSize: 40, bold: true, uppercase: false,
+  labelEnabled: true, label: 'UŽIVO', labelUppercase: true, labelShape: 'rectangle', barStyle: 'solid', graphics: [], textX: 0, textY: 0, textWidth: 100, textHeight: 100, font: 'Arial', fontSize: 40, bold: true, uppercase: false,
   barHeight: 100, textColor: '#ffffff', barColor: '#182020', accentColor: '#cbf77d', labelColor: '#121416',
   opacity: 100, radius: 0, accentLine: true, position: 'bottom', margin: 48, motion: 'left', speed: 120, gap: 120,
   staticDuration: 5, resolution: '1920x1080', customWidth: 1920, customHeight: 1080,
   fps: 30, scope: 'strip', format: 'webm', transparent: true, preset: 'studio'
 };
 const bindings = {
-  text: 'text', labelEnabled: 'label-enabled', label: 'label', font: 'font', fontSize: 'font-size',
+  text: 'text', labelEnabled: 'label-enabled', label: 'label', font: 'font', fontSize: 'font-size', labelUppercase: 'label-uppercase', labelShape: 'label-shape', barStyle: 'bar-style', textX: 'text-x', textY: 'text-y', textWidth: 'text-width', textHeight: 'text-height',
   bold: 'bold', uppercase: 'uppercase', barHeight: 'bar-height', textColor: 'text-color', barColor: 'bar-color',
   accentColor: 'accent-color', labelColor: 'label-color', opacity: 'opacity', radius: 'radius', position: 'position',
   accentLine: 'accent-line', margin: 'margin', motion: 'motion', speed: 'speed', gap: 'gap', staticDuration: 'static-duration',
   resolution: 'resolution', customWidth: 'custom-width', customHeight: 'custom-height', fps: 'fps',
   scope: 'scope', format: 'format', transparent: 'transparent'
 };
-const limits = { fontSize: [16, 120], barHeight: [48, 320], opacity: [0, 100], radius: [0, 48], margin: [0, 200], speed: [30, 350], gap: [40, 500], customWidth: [320, 3840], customHeight: [320, 2160] };
-const enums = { font: ['Arial', 'Verdana', 'Georgia', 'Courier New'], position: ['bottom', 'center', 'top'], motion: ['left', 'right', 'static'], resolution: ['1920x1080', '1280x720', '2560x1440', '3840x2160', 'custom'], fps: [25, 30, 50, 60], scope: ['strip', 'frame'], format: ['webm', 'mov', 'mp4'], staticDuration: [5, 10, 15, 30], preset: ['studio', 'news', 'minimal', 'custom'] };
+const limits = { textX: [0,90], textY: [0,80], textWidth: [10,100], textHeight: [20,100], fontSize: [16, 120], barHeight: [48, 320], opacity: [0, 100], radius: [0, 48], margin: [0, 200], speed: [30, 350], gap: [40, 500], customWidth: [320, 3840], customHeight: [320, 2160] };
+const enums = { labelShape: ['rectangle','pill','flag','dot','outline'], barStyle: ['solid','gradient','outline','double','diagonal'], font: ['Arial', 'Verdana', 'Georgia', 'Courier New'], position: ['bottom', 'center', 'top'], motion: ['left', 'right', 'static'], resolution: ['1920x1080', '1280x720', '2560x1440', '3840x2160', 'custom'], fps: [25, 30, 50, 60], scope: ['strip', 'frame'], format: ['webm', 'mov', 'mp4'], staticDuration: [5, 10, 15, 30], preset: [...STUDIO_DESIGNS.map(a=>a.id), 'custom'] };
 function sanitize(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Neispravan projekat.');
   const clean = { ...defaults };
   for (const [key, fallback] of Object.entries(defaults)) {
     const value = input[key];
     if (value === undefined) continue;
+    if (key === 'graphics') { clean.graphics = sanitizeGraphicLayers(value); continue; }
     if (enums[key]) { if (enums[key].includes(value)) clean[key] = value; }
     else if (limits[key]) { const n = Number(value); if (Number.isFinite(n)) clean[key] = Math.round(Math.min(limits[key][1], Math.max(limits[key][0], n))); }
     else if (key.endsWith('Color')) { if (/^#[0-9a-f]{6}$/i.test(value)) clean[key] = value; }
@@ -47,35 +48,56 @@ const preview = $('preview'), ctx = preview.getContext('2d');
 const measure = document.createElement('canvas').getContext('2d');
 let geometry;
 function textOf(s) { const text = s.text.trim().split(/\r?\n/).map(t => t.trim()).filter(Boolean).join('   •   '); return s.uppercase ? text.toLocaleUpperCase('sr-Latn') : text; }
+function labelOf(s) { return s.labelUppercase ? s.label.toLocaleUpperCase('sr-Latn') : s.label; }
 function textFont(s) { return `${s.bold ? 700 : 400} ${s.fontSize}px "${s.font}"`; }
 function calc(s) {
   let [width, height] = s.resolution === 'custom' ? [s.customWidth, s.customHeight] : s.resolution.split('x').map(Number);
   const barHeight = Math.min(s.barHeight, height), barY = s.position === 'top' ? Math.min(s.margin, height - barHeight) : s.position === 'center' ? Math.floor((height - barHeight) / 2) : Math.max(0, height - barHeight - s.margin);
   const labelSize = Math.min(s.fontSize * .72, barHeight * .46);
   measure.font = `700 ${labelSize}px "${s.font}"`;
-  const labelWidth = s.labelEnabled && s.label.trim() ? Math.min(Math.ceil(measure.measureText(s.label.toLocaleUpperCase('sr-Latn')).width + s.fontSize * 1.4), Math.floor(width * .42)) : 0;
+  const labelWidth = s.labelEnabled && s.label.trim() ? Math.min(Math.ceil(measure.measureText(labelOf(s)).width + s.fontSize * (s.labelShape === 'dot' ? 2.1 : 1.4)), Math.floor(width * .42)) : 0;
   measure.font = textFont(s);
   const text = textOf(s), textWidth = measure.measureText(text).width;
   const period = Math.max(2, Math.ceil((textWidth + s.gap) / 2) * 2);
   const frames = s.motion === 'static' ? Math.round(s.staticDuration * s.fps) : Math.max(1, Math.ceil(period / s.speed * s.fps));
-  return { width, height, barHeight, barY, labelSize, labelWidth, text, textWidth, period, frames, duration: frames / s.fps, effectiveSpeed: period / (frames / s.fps), contentWidth: width - labelWidth };
+  const contentX = Math.max(labelWidth, Math.floor(width * s.textX / 100));
+  const contentY = Math.floor(barHeight * s.textY / 100);
+  const contentWidth = Math.max(2, Math.min(width - contentX, Math.floor(width * s.textWidth / 100)));
+  const contentHeight = Math.max(2, Math.min(barHeight - contentY, Math.floor(barHeight * s.textHeight / 100)));
+  return { width, height, barHeight, barY, labelSize, labelWidth, text, textWidth, period, frames, duration: frames / s.fps, effectiveSpeed: period / (frames / s.fps), contentWidth, contentHeight, contentX, contentY };
 }
 function roundedPath(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, Math.min(r, h / 2, w / 2)); }
 function paintBase(c, s, g, strip = false, opaque = false) {
   const y = strip ? 0 : g.barY, outH = strip ? g.barHeight : g.height;
   if (opaque) { c.fillStyle = '#000000'; c.fillRect(0, 0, g.width, outH); }
   c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip();
-  c.globalAlpha = s.opacity / 100; c.fillStyle = s.barColor; c.fillRect(0, y, g.width, g.barHeight); c.globalAlpha = 1;
-  if (s.accentLine) { c.fillStyle = s.accentColor; c.fillRect(0, y, g.width, 3); }
+  c.globalAlpha = s.opacity / 100;
+  if(s.barStyle === 'gradient') { const gradient=c.createLinearGradient(0,y,g.width,y+g.barHeight);gradient.addColorStop(0,s.barColor);gradient.addColorStop(1,s.accentColor);c.fillStyle=gradient; }
+  else c.fillStyle = s.barColor;
+  c.fillRect(0, y, g.width, g.barHeight); c.globalAlpha = 1;
+  c.fillStyle=s.accentColor;
+  if (s.accentLine) c.fillRect(0, y, g.width, 3);
+  if(s.barStyle==='outline'){c.strokeStyle=s.accentColor;c.lineWidth=4;roundedPath(c,2,y+2,g.width-4,g.barHeight-4,Math.max(0,s.radius-2));c.stroke();}
+  if(s.barStyle==='double'){c.fillRect(0,y,g.width,4);c.fillRect(0,y+g.barHeight-4,g.width,4);}
+  if(s.barStyle==='diagonal'){c.globalAlpha=.16;for(let x=0;x<g.width;x+=80){c.beginPath();c.moveTo(x,y);c.lineTo(x+30,y);c.lineTo(x-20,y+g.barHeight);c.lineTo(x-50,y+g.barHeight);c.fill();}}
   c.restore();
+  paintGraphics(c,s,g,'behind',strip);
 }
 function paintForeground(c, s, g, strip = false) {
-  if (!g.labelWidth) return;
   const y = strip ? 0 : g.barY;
-  c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip();
-  c.fillStyle = s.accentColor; c.fillRect(0, y, g.labelWidth, g.barHeight);
-  c.fillStyle = s.labelColor; c.font = `700 ${g.labelSize}px "${s.font}"`; c.textBaseline = 'middle'; c.textAlign = 'center';
-  c.fillText(s.label.toLocaleUpperCase('sr-Latn'), g.labelWidth / 2, y + g.barHeight / 2 + g.labelSize * .04, g.labelWidth - 24); c.restore();
+  if(g.labelWidth){
+    c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip();
+    const inset=['pill','outline'].includes(s.labelShape)?8:0;
+    c.fillStyle=s.accentColor;
+    if(s.labelShape==='flag'){c.beginPath();c.moveTo(0,y);c.lineTo(g.labelWidth-14,y);c.lineTo(g.labelWidth,y+g.barHeight/2);c.lineTo(g.labelWidth-14,y+g.barHeight);c.lineTo(0,y+g.barHeight);c.closePath();c.fill();}
+    else if(s.labelShape==='outline'){c.strokeStyle=s.accentColor;c.lineWidth=2;roundedPath(c,inset,y+inset,g.labelWidth-inset*2,g.barHeight-inset*2,10);c.stroke();}
+    else{roundedPath(c,inset,y+inset,g.labelWidth-inset*2,g.barHeight-inset*2,s.labelShape==='pill'?g.barHeight/2:0);c.fill();}
+    const dot=s.labelShape==='dot'?g.labelSize*.65:0;
+    if(dot){c.fillStyle=s.labelColor;c.beginPath();c.arc(18+dot/2,y+g.barHeight/2,dot/2,0,Math.PI*2);c.fill();}
+    c.fillStyle = s.labelShape==='outline'?s.accentColor:s.labelColor; c.font = `700 ${g.labelSize}px "${s.font}"`; c.textBaseline = 'middle'; c.textAlign = 'center';
+    c.fillText(labelOf(s), (g.labelWidth+dot)/2, y+g.barHeight/2+g.labelSize*.04, Math.max(2,g.labelWidth-24-dot)); c.restore();
+  }
+  paintGraphics(c,s,g,'above',strip);
 }
 function paintText(c, s, g, time, strip = false) {
   if (!g.text) return;
@@ -83,13 +105,13 @@ function paintText(c, s, g, time, strip = false) {
   let offset = (time % g.duration) / g.duration * g.period;
   if (s.motion === 'right') offset = (g.period - offset) % g.period;
   if (s.motion === 'static') offset = 0;
-  c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip(); c.beginPath(); c.rect(g.labelWidth, y, g.contentWidth, g.barHeight); c.clip();
+  c.save(); roundedPath(c, 0, y, g.width, g.barHeight, s.radius); c.clip(); c.beginPath(); c.rect(g.contentX, y + g.contentY, g.contentWidth, g.contentHeight); c.clip();
   c.font = textFont(s); c.fillStyle = s.textColor; c.textBaseline = 'middle'; c.textAlign = 'left';
-  if (s.motion === 'static') c.fillText(g.text, g.labelWidth + 30, y + g.barHeight / 2 + s.fontSize * .04);
-  else for (let x = g.labelWidth + 30 - offset; x < g.width; x += g.period) c.fillText(g.text, x, y + g.barHeight / 2 + s.fontSize * .04);
+  if (s.motion === 'static') c.fillText(g.text, g.contentX + 30, y + g.contentY + g.contentHeight / 2 + s.fontSize * .04);
+  else for (let x = g.contentX + 30 - offset; x < g.width; x += g.period) c.fillText(g.text, x, y + g.contentY + g.contentHeight / 2 + s.fontSize * .04);
   c.restore();
 }
-function paintPreview(time) { ctx.clearRect(0, 0, geometry.width, geometry.height); paintBase(ctx, state, geometry); paintText(ctx, state, geometry, time); paintForeground(ctx, state, geometry); }
+function paintPreview(time) { ctx.clearRect(0, 0, geometry.width, geometry.height); paintBase(ctx, state, geometry); paintText(ctx, state, geometry, time); paintForeground(ctx, state, geometry); paintGraphicSelection(ctx,state,geometry); }
 const formatTime = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 let playTime = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, lastTime = performance.now();
 function updateUI(syncInputs = false) {
@@ -116,6 +138,7 @@ function updateUI(syncInputs = false) {
   $('play').textContent = playing ? 'Ⅱ' : '▶'; $('play').setAttribute('aria-label', playing ? 'Pauziraj pregled' : 'Pokreni pregled');
   document.querySelectorAll('[data-preset]').forEach(b => { b.classList.toggle('selected', b.dataset.preset === state.preset); b.setAttribute('aria-pressed', String(b.dataset.preset === state.preset)); });
   playTime %= geometry.duration; paintPreview(playTime);
+  updateGraphicTools();
 }
 for (const [key, id] of Object.entries(bindings)) {
   const el = $(id);
@@ -125,7 +148,7 @@ for (const [key, id] of Object.entries(bindings)) {
     const previous = state.format;
     state = sanitize({ ...state, [key]: value });
     if (key === 'format' && previous === 'mp4' && state.format !== 'mp4') state.transparent = true;
-    if (['barColor', 'accentColor', 'textColor', 'labelColor', 'opacity', 'radius', 'bold', 'font'].includes(key)) state.preset = 'custom';
+    if (['barColor','accentColor','textColor','labelColor','opacity','radius','bold','font','label','labelEnabled','labelUppercase','labelShape','barStyle','textX','textY','textWidth','textHeight'].includes(key)) state.preset = 'custom';
     playTime = 0; updateUI(); persist();
   });
   if (el.type === 'number') el.addEventListener('change', () => { el.value = state[key]; });
@@ -135,12 +158,15 @@ document.querySelectorAll('[data-tab]').forEach((button, i, buttons) => {
   button.addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const b = buttons[(i + (e.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length]; b.click(); b.focus(); } });
   button.tabIndex = i ? -1 : 0;
 });
-const styles = {
-  studio: { barColor: '#182020', accentColor: '#cbf77d', textColor: '#ffffff', labelColor: '#121416', opacity: 100, radius: 0, accentLine: true, labelEnabled: true, label: 'UŽIVO', bold: true, font: 'Arial' },
-  news: { barColor: '#f0f1ed', accentColor: '#dc3543', textColor: '#20242b', labelColor: '#ffffff', opacity: 100, radius: 0, accentLine: true, labelEnabled: true, label: 'VESTI', bold: true, font: 'Arial' },
-  minimal: { barColor: '#131815', accentColor: '#ffffff', textColor: '#ffffff', labelColor: '#131815', opacity: 78, radius: 12, accentLine: false, labelEnabled: false, label: '', bold: false, font: 'Arial' }
-};
-document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { state = { ...state, ...styles[b.dataset.preset], preset: b.dataset.preset }; updateUI(true); persist(); }));
+const styles = Object.fromEntries(STUDIO_DESIGNS.map(item=>[item.id,item.settings]));
+function applyDesign(id) {
+  if(!styles[id])return;
+  const chosen={...styles[id]};
+  if(window.KajronI18n.language==='en')chosen.label=({UŽIVO:'LIVE',VESTI:'NEWS',NAJNOVIJE:'BREAKING',SPORT:'SPORT',BIZNIS:'BUSINESS'})[chosen.label]||chosen.label;
+  state = sanitize({...state,...chosen,graphics:[],preset:id});
+  updateUI(true);persist();updateGraphicTools(true);refreshExportAction();
+}
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>applyDesign(b.dataset.preset)));
 $('play').addEventListener('click', () => { playing = !playing; updateUI(); });
 $('restart').addEventListener('click', () => { playTime = 0; paintPreview(0); });
 function tick(now) { const delta = Math.min((now - lastTime) / 1000, .1); lastTime = now; if (playing && !document.hidden) { playTime = (playTime + delta) % geometry.duration; paintPreview(playTime); } $('timecode').innerHTML = `${formatTime(playTime)} <span>/ ${formatTime(geometry.duration)}</span>`; $('timeline-progress').style.width = `${playTime / geometry.duration * 100}%`; requestAnimationFrame(tick); }
@@ -155,6 +181,7 @@ $('reset').addEventListener('click', () => { state = { ...defaults }; playTime =
 function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; if (!c.getContext('2d')) throw new Error('Pregledač ne može da napravi sliku ove veličine.'); return c; }
 async function pngBytes(c) { const blob = await new Promise(resolve => c.toBlob(resolve, 'image/png')); if (!blob) throw new Error('Tekst je predugačak za ovu veličinu slova. Skrati tekst ili smanji slova.'); return new Uint8Array(await blob.arrayBuffer()); }
 async function renderLayers(s, g) {
+  if(!s.textOnly)await ensureGraphicImages(s.graphics);
   const strip = s.scope === 'strip', h = strip ? g.barHeight : g.height;
   const base = makeCanvas(g.width, h), fg = makeCanvas(g.width, h);
   paintBase(base.getContext('2d'), s, g, strip, !s.transparent);
@@ -164,17 +191,18 @@ async function renderLayers(s, g) {
   roundedPath(mc, 0, strip ? 0 : g.barY, g.width, g.barHeight, s.radius); mc.fillStyle = '#ffffff'; mc.fill();
   const trackWidth = s.motion === 'static' ? g.contentWidth : Math.ceil(g.period + g.contentWidth + 32);
   if (trackWidth > 32760) throw new Error('Tekst je predugačak za ovu veličinu slova. Skrati tekst ili smanji slova, pa ponovi izvoz.');
-  const track = makeCanvas(Math.max(2, trackWidth), g.barHeight), tc = track.getContext('2d');
+  const track = makeCanvas(Math.max(2, trackWidth), g.contentHeight), tc = track.getContext('2d');
   tc.font = textFont(s); tc.fillStyle = s.textColor; tc.textBaseline = 'middle';
-  if (s.motion === 'static') tc.fillText(g.text, 30, g.barHeight / 2 + s.fontSize * .04);
-  else for (let x = 30; x < track.width; x += g.period) tc.fillText(g.text, x, g.barHeight / 2 + s.fontSize * .04);
+  if (s.motion === 'static') tc.fillText(g.text, 30, g.contentHeight / 2 + s.fontSize * .04);
+  else for (let x = 30; x < track.width; x += g.period) tc.fillText(g.text, x, g.contentHeight / 2 + s.fontSize * .04);
   return { base: await pngBytes(base), track: await pngBytes(track), fg: await pngBytes(fg), mask: await pngBytes(mask), h };
 }
 function buildCommand(s, g) {
   const h = s.scope === 'strip' ? g.barHeight : g.height, y = s.scope === 'strip' ? 0 : g.barY;
   const x = s.motion === 'static' ? '0' : s.motion === 'right' ? `mod(${g.period}-mod(n*${g.period}/${g.frames}\\,${g.period})\\,${g.period})` : `mod(n*${g.period}/${g.frames}\\,${g.period})`;
   const inputs = ['base.png', 'track.png', 'foreground.png', 'mask.png'].flatMap(name => ['-loop', '1', '-framerate', String(s.fps), '-i', name]);
-  let filters = `[1:v]format=rgba,crop=${g.contentWidth}:${g.barHeight}:${x}:0:exact=1[text];[0:v]format=rgba[base];[base][text]overlay=${g.labelWidth}:${y}:format=auto:shortest=1[bar];[bar][2:v]overlay=0:0:format=auto:shortest=1[combined];[combined]split=2[color][alpha];[alpha]alphaextract[originalalpha];[3:v]alphaextract[mask];[originalalpha][mask]blend=all_mode=multiply[finalalpha];[color][finalalpha]alphamerge[rounded]`;
+  const tx=g.contentX ?? g.labelWidth, ty=y+(g.contentY||0), th=g.contentHeight||g.barHeight;
+  let filters = `[1:v]format=rgba,crop=${g.contentWidth}:${th}:${x}:0:exact=1[cropped];color=c=black@0.0:s=${g.width}x${h}:r=${s.fps},format=rgba[canvas];[canvas][cropped]overlay=${tx}:${ty}:format=auto:shortest=1[textfull];[textfull]split=2[textcolor][textalpha];[textalpha]alphaextract[originalalpha];[3:v]alphaextract[mask];[originalalpha][mask]blend=all_mode=multiply[finalalpha];[textcolor][finalalpha]alphamerge[maskedtext];[0:v]format=rgba[base];[base][maskedtext]overlay=0:0:format=auto:shortest=1[bar];[bar][2:v]overlay=0:0:format=auto:shortest=1[rounded]`;
   // Keep full color resolution until the encoder chooses its required format.
   // Converting PNG/ProRes through 4:2:0 first destroys fine colored text edges.
   if (!s.transparent) filters += `;color=c=black:s=${g.width}x${h}:r=${s.fps},format=rgba[black];[black][rounded]overlay=0:0:format=auto:shortest=1,format=rgba[out]`;
