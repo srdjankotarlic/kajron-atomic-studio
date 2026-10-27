@@ -36,6 +36,7 @@ ipcMain.on('kajron-message', async (_event, message) => {
   } catch (error) { waiting.reject(error); }
 });
 app.whenReady().then(async () => {
+  await fs.mkdir(path.dirname(reportPath), { recursive: true });
   timer = setTimeout(() => finish(new Error('Smoke test timed out')), 120000);
   window = new BrowserWindow({ show: false, width: 1340, height: 950, webPreferences: { preload: path.join(__dirname,'preload.cjs'), sandbox: true, contextIsolation: true, nodeIntegration: false, offscreen: true } });
   await window.loadFile(path.join(__dirname,'ui','index.html'));
@@ -57,6 +58,7 @@ app.whenReady().then(async () => {
     const pending = new Promise((resolve,reject) => { waiting = { resolve,reject }; });
     await evaluate(`state=sanitize({...state,text:'OBS Atomic Studio ČĆŽŠĐ',labelEnabled:false,fontSize:32,motion:'static',staticDuration:5,resolution:'custom',customWidth:640,customHeight:360,scope:'strip',fps:25,format:${JSON.stringify(format)},transparent:${format!=='mp4'},textOnly:${format!=='mp4'}});updateUI(true);document.getElementById('export').click()`);
     await pending;
+    await evaluate("(async()=>{for(let i=0;i<100;i++){if(!exporting)return;await new Promise(r=>setTimeout(r,50));}throw new Error('Renderer did not finish export');})()");
   }
   report.languageSwitch = true;
   await finish();

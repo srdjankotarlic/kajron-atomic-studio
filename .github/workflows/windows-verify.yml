@@ -1,0 +1,45 @@
+name: Windows release verification
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to test
+        required: true
+        default: v1.5.0
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          New-Item -ItemType Directory -Force package | Out-Null
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern '*Portable*.zip' --pattern '*Setup*.exe' --dir package
+          if ($LASTEXITCODE -ne 0) { throw 'Download failed' }
+          Expand-Archive (Get-ChildItem package/*Portable*.zip).FullName package/unpacked
+      - name: Run native Windows checks
+        shell: pwsh
+        run: |
+          $payload = (Get-ChildItem package/unpacked -Directory).FullName
+          $appDir = Join-Path $payload 'resources/app'
+          Copy-Item tests/windows-smoke.cjs (Join-Path $appDir 'smoke.cjs')
+          $pkgPath = Join-Path $appDir 'package.json'
+          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+          $pkg.main = 'smoke.cjs'
+          $pkg | ConvertTo-Json | Set-Content -Encoding utf8 $pkgPath
+          $env:KAJRON_SMOKE_REPORT = Join-Path $env:RUNNER_TEMP 'atomic-smoke/report.json'
+          $process = Start-Process -FilePath (Join-Path $payload 'Kajron Atomic Studio.exe') -Wait -PassThru
+          if (Test-Path $env:KAJRON_SMOKE_REPORT) { Get-Content $env:KAJRON_SMOKE_REPORT }
+          if ($process.ExitCode -ne 0) { throw 'Application smoke failed' }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-report
+          path: ${{ runner.temp }}/atomic-smoke/
