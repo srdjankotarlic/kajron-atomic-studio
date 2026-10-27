@@ -163,7 +163,8 @@ function initGraphicDragging(){
   preview.addEventListener('pointerdown',e=>{
     if(state.textOnly||e.button!==0)return;
     const p=point(e);
-    const layers=[...state.graphics].filter(a=>a.enabled);
+    const enabled=state.graphics.filter(a=>a.enabled);
+    const layers=[...enabled.filter(a=>a.placement==='behind'),...enabled.filter(a=>a.placement==='above')];
     const layer=layers.reverse().find(a=>{const r=graphicRect(a,geometry,false);return p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;});
     if(!layer)return;
     selectedGraphic=layer.id;dragGraphic={...p,x0:layer.x,y0:layer.y,anchor:layer.anchor};preview.setPointerCapture(e.pointerId);e.preventDefault();updateGraphicTools(true);paintPreview(playTime);

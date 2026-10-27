@@ -129,6 +129,16 @@ app.whenReady().then(async()=>{
     await evaluate("$('graphics-heading').scrollIntoView({block:'start'})");
     await fs.writeFile(path.join(output,'graphics-interface.png'),(await win.webContents.capturePage()).toPNG());
   });
+  await check('drag a logo in the actual preview and retain its editable coordinates',async()=>{
+    await evaluate('window.scrollTo(0,0)');
+    const point=await evaluate("(()=>{const r=preview.getBoundingClientRect();return {x:Math.round(r.left+550*r.width/640),y:Math.round(r.top+40*r.height/360)}})()");
+    win.webContents.sendInputEvent({type:'mouseMove',...point});
+    win.webContents.sendInputEvent({type:'mouseDown',...point,button:'left',clickCount:1});
+    win.webContents.sendInputEvent({type:'mouseMove',x:point.x+20,y:point.y});
+    win.webContents.sendInputEvent({type:'mouseUp',x:point.x+20,y:point.y,button:'left',clickCount:1});
+    await until(async()=>await evaluate('state.graphics[1].x')>80,'dragged image position');
+    await evaluate("$('graphic-x').value='80';$('graphic-x').dispatchEvent(new Event('input',{bubbles:true}))");
+  });
   await check('graphics survive export outside the ticker strip and match the Canvas preview',async()=>{
     const expected=await evaluate("(async()=>{await readyTextFont(state);updateUI();paintPreview(0);return preview.toDataURL('image/png').split(',')[1]})()");
     await fs.writeFile(path.join(output,'graphics-expected.png'),Buffer.from(expected,'base64'));
