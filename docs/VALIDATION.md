@@ -1,11 +1,13 @@
 # Validation — 1.5.1
 
+**All checks below passed.** [Native Windows run, including installer checks](https://github.com/srdjankotarlic/kajron-atomic-studio/actions/runs/40510628622). The release includes a machine-readable `VERIFICATION.json`.
+
 | Check | Result |
 | --- | --- |
 | macOS native build and ad-hoc signature verification | Passed |
 | English / Serbian UI, native menu switching, text preservation | Passed in the running Mac application |
 | Language persistence and dynamic status translation | Passed automated tests |
-| Saving the last edit before an immediate restart | Regression check included |
+| Saving the last edit before an immediate restart | Passed on the native Windows renderer and in regression tests |
 | Overlapping font loads, startup restore and explicit user choices | Passed regression tests |
 | MOV PNG fine color detail | All 64000 RGBA pixels match exactly in four alpha/quality combinations |
 | Imported font load and persistence | Passed in the Mac app; Windows storage/import functions checked with real font bytes |
